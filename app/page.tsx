@@ -14,7 +14,7 @@ import Button from '@/components/forms/Button';
 import VideoPreview from '@/components/studio/VideoPreview';
 import CampaignWizard from '@/components/studio/CampaignWizard';
 import { ToastContainer } from '@/components/ui/Toast';
-import { Video, Image, Type, Play, Sparkles, TrendingUp, BarChart3, Clock } from 'lucide-react';
+import { Video, Image, Type, Play, Sparkles, TrendingUp, BarChart3, Clock, FileText, ImagePlus, Clapperboard } from 'lucide-react';
 
 type GenerationType = 'text-to-video' | 'image-to-video' | 'video-to-video';
 
@@ -30,6 +30,7 @@ export default function Home() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
   const [scriptText, setScriptText] = useState<string>('');
+  const [showScriptWriter, setShowScriptWriter] = useState(true);
 
   const addToast = (type: 'success' | 'error' | 'info', message: string) => {
     const toast: ToastMessage = {
@@ -128,7 +129,7 @@ export default function Home() {
               </div>
               <div className="border-t border-linkedin-gray-200 px-4 py-3">
                 <div className="flex justify-between items-center text-xs">
-                  <span className="text-linkedin-gray-600">Videos created</span>
+                  <span className="text-linkedin-gray-600">Posts</span>
                   <span className="font-semibold text-linkedin-gray-900">127</span>
                 </div>
               </div>
@@ -159,19 +160,19 @@ export default function Home() {
                 <TabButton
                   active={activeTab === 'text-to-video'}
                   onClick={() => setActiveTab('text-to-video')}
-                  icon={<Type className="w-4 h-4" />}
+                  icon={<FileText className="w-4 h-4" />}
                   label="Text to Video"
                 />
                 <TabButton
                   active={activeTab === 'image-to-video'}
                   onClick={() => setActiveTab('image-to-video')}
-                  icon={<Image className="w-4 h-4" />}
+                  icon={<ImagePlus className="w-4 h-4" />}
                   label="Image to Video"
                 />
                 <TabButton
                   active={activeTab === 'video-to-video'}
                   onClick={() => setActiveTab('video-to-video')}
-                  icon={<Play className="w-4 h-4" />}
+                  icon={<Clapperboard className="w-4 h-4" />}
                   label="Video to Video"
                 />
               </div>
@@ -183,8 +184,8 @@ export default function Home() {
                     <TextInput
                       value={text}
                       onChange={setText}
-                      placeholder="Share your thoughts, ideas, or story... (minimum 10 characters)"
-                      rows={8}
+                      placeholder="Describe what you want your video to convey... Your story, insight, or idea that connects with your professional audience"
+                      rows={12}
                       error={error}
                     />
 
@@ -248,7 +249,7 @@ export default function Home() {
                         <TextInput
                           value={text}
                           onChange={setText}
-                          placeholder="Add a description or prompt for your video... (optional)"
+                          placeholder="Describe the video transformation you want..."
                           rows={4}
                           error={error}
                         />
@@ -314,7 +315,7 @@ export default function Home() {
                         <TextInput
                           value={text}
                           onChange={setText}
-                          placeholder="Add enhancement instructions... (optional)"
+                          placeholder="Describe how you want to transform this video..."
                           rows={4}
                           error={error}
                         />
@@ -348,9 +349,25 @@ export default function Home() {
             )}
           </div>
 
-          {/* Right Sidebar - Script Writer */}
+          {/* Right Sidebar - Script Writer Toggle */}
           <div className="col-span-4">
-            <ScriptEditor onScriptGenerated={handleScriptGenerated} importedText={scriptText} />
+            {/* Toggle Header */}
+            <div className="bg-white rounded-xl shadow-linkedin p-4 mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-linkedin-blue" />
+                <h3 className="text-sm font-semibold text-linkedin-gray-900">Script Writer</h3>
+              </div>
+              <button
+                onClick={() => setShowScriptWriter(!showScriptWriter)}
+                className="text-xs text-linkedin-blue hover:text-linkedin-blue-dark font-medium transition-colors"
+              >
+                {showScriptWriter ? 'Collapse' : 'Expand'}
+              </button>
+            </div>
+            
+            {showScriptWriter && (
+              <ScriptEditor onScriptGenerated={handleScriptGenerated} importedText={scriptText} />
+            )}
           </div>
         </div>
       </div>

@@ -483,39 +483,39 @@ function Step5({ campaignId, estimatedReach, onClose, onSuccess }: any) {
       key="step5"
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="text-center py-8"
+      className="text-center py-6"
     >
-      <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-linkedin-success/10 flex items-center justify-center">
-        <Check className="w-10 h-10 text-linkedin-success" />
+      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-linkedin-success/10 flex items-center justify-center">
+        <Check className="w-8 h-8 text-linkedin-success" />
       </div>
-      <h3 className="text-2xl font-bold text-linkedin-gray-900 mb-2">
+      <h3 className="text-xl font-bold text-linkedin-gray-900 mb-2">
         Campaign Launched Successfully!
       </h3>
-      <p className="text-linkedin-gray-600 mb-6">
+      <p className="text-sm text-linkedin-gray-600 mb-5">
         Your LinkedIn ad campaign is now live and reaching your target audience.
       </p>
 
-      <div className="bg-linkedin-gray-100 rounded-lg p-6 mb-6">
+      <div className="bg-linkedin-gray-100 rounded-lg p-4 mb-5">
         <div className="grid grid-cols-2 gap-4 text-left">
           <div>
             <p className="text-xs text-linkedin-gray-600 mb-1">Campaign ID</p>
-            <p className="text-sm font-semibold text-linkedin-gray-900">{campaignId}</p>
+            <p className="text-sm font-semibold text-linkedin-gray-900 truncate">{campaignId}</p>
           </div>
           <div>
             <p className="text-xs text-linkedin-gray-600 mb-1">Estimated Reach</p>
-            <p className="text-sm font-semibold text-linkedin-gray-900">{estimatedReach?.toLocaleString()}</p>
+            <p className="text-sm font-semibold text-linkedin-gray-900">{estimatedReach?.toLocaleString()} people</p>
           </div>
         </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
-        <Button variant="secondary">
+        <Button variant="secondary" className="text-sm">
           View Campaign
         </Button>
         <Button onClick={() => {
           onSuccess();
           onClose();
-        }}>
+        }} className="text-sm">
           Create Another Video
         </Button>
       </div>

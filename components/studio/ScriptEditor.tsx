@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { HiSparkles } from 'react-icons/hi';
-import { Settings, X, ArrowUp } from 'lucide-react';
+import { Settings, X, ArrowUp, PenTool, FileText, Wand2, Check, Edit3, RefreshCw, Plus, Maximize2, MessageSquare, Wand, ChevronDown } from 'lucide-react';
 
 interface ScriptEditorProps {
   onScriptGenerated: (script: string) => void;
@@ -10,10 +9,20 @@ interface ScriptEditorProps {
 }
 
 const PREDEFINED_PROMPTS = [
-  "Share a behind-the-scenes story",
-  "Explain a complex topic simply",
-  "Share a career lesson learned",
-  "Discuss an industry trend",
+  "Share a behind-the-scenes story from GSOBA",
+  "Explain a product feature simply",
+  "Share a career lesson learned recently",
+  "Discuss an AI industry trend",
+  "Celebrate a team win or milestone",
+];
+
+const EDIT_OPTIONS = [
+  { id: 'rewrite', label: 'Rewrite script', icon: RefreshCw, description: 'Generate a fresh version with different wording' },
+  { id: 'shorter', label: 'Make it shorter', icon: ArrowUp, description: 'Condense to under 30 seconds' },
+  { id: 'longer', label: 'Make it longer', icon: Plus, description: 'Expand with more details' },
+  { id: 'casual', label: 'More casual tone', icon: MessageSquare, description: 'Make it conversational and relaxed' },
+  { id: 'professional', label: 'More professional', icon: PenTool, description: 'Polish for corporate audience' },
+  { id: 'custom', label: 'Custom edit...', icon: Edit3, description: 'Describe what you want changed' },
 ];
 
 const DEFAULT_MASTER_PROMPT = `you are my linkedin video script writer. i'm Thor Odinson, Senior Product Manager at GSOBA (we build AI-powered tools for creative professionals).
@@ -43,11 +52,13 @@ MORE RULES:
 - if i include an image, reference it early and naturally
 
 output format:
-title: 3–6 words
-hook: one line
-script: 90–160 words, single paragraph (MUST include my name Thor/Thor Odinson and reference to GSOBA or my role)
-captions: 4–8 short lines that echo key moments
-cta: one line, low pressure
+**TITLE:** 3–6 words that grab attention
+
+**SCRIPT:**
+90–160 words, single paragraph (MUST include my name Thor/Thor Odinson and reference to GSOBA or my role)
+
+**HASHTAGS:**
+3-5 relevant hashtags for LinkedIn (mix of popular and niche tags like #ProductManagement #AI #GSOBA #Innovation #TechLeadership)
 
 input i will provide:
 - post text
@@ -60,9 +71,11 @@ export default function ScriptEditor({ onScriptGenerated, importedText }: Script
   const [messages, setMessages] = useState<{ text: string; timestamp: Date; isAI?: boolean }[]>([]);
   const [loading, setLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showEditDropdown, setShowEditDropdown] = useState(false);
   const [masterPrompt, setMasterPrompt] = useState(DEFAULT_MASTER_PROMPT);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const editDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (importedText) {
@@ -75,7 +88,6 @@ export default function ScriptEditor({ onScriptGenerated, importedText }: Script
   }, [messages]);
 
   useEffect(() => {
-    // Load custom master prompt from localStorage
     const savedPrompt = localStorage.getItem('MASTER_PROMPT');
     if (savedPrompt) {
       setMasterPrompt(savedPrompt);
@@ -90,16 +102,10 @@ export default function ScriptEditor({ onScriptGenerated, importedText }: Script
     setLoading(true);
 
     try {
-      // Call OpenAI API to generate script
       const response = await fetch('/api/generate-script', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userInput: input,
-          masterPrompt,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userInput: input, masterPrompt }),
       });
 
       if (!response.ok) {
@@ -108,19 +114,10 @@ export default function ScriptEditor({ onScriptGenerated, importedText }: Script
       }
 
       const data = await response.json();
-      const generatedScript = data.script;
-
-      // Add AI response to messages
-      const aiMessage = { text: generatedScript, timestamp: new Date(), isAI: true };
+      const aiMessage = { text: data.script, timestamp: new Date(), isAI: true };
       setMessages((prev) => [...prev, aiMessage]);
-
-      // Send generated script to video editor
-      onScriptGenerated(generatedScript);
       setInput('');
     } catch (error) {
-      console.error('Error generating script:', error);
-
-      // Show error message to user
       const errorMessage = {
         text: `Error: ${error instanceof Error ? error.message : 'Failed to generate script'}. Please check your API key in the .env file.`,
         timestamp: new Date(),
@@ -142,23 +139,15 @@ export default function ScriptEditor({ onScriptGenerated, importedText }: Script
 
   const handlePromptClick = async (prompt: string) => {
     setInput(prompt);
-
-    // Auto-submit the prompt
     const userMessage = { text: prompt, timestamp: new Date(), isAI: false };
     setMessages([userMessage]);
     setLoading(true);
 
     try {
-      // Call OpenAI API to generate script
       const response = await fetch('/api/generate-script', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userInput: prompt,
-          masterPrompt,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userInput: prompt, masterPrompt }),
       });
 
       if (!response.ok) {
@@ -167,19 +156,10 @@ export default function ScriptEditor({ onScriptGenerated, importedText }: Script
       }
 
       const data = await response.json();
-      const generatedScript = data.script;
-
-      // Add AI response to messages
-      const aiMessage = { text: generatedScript, timestamp: new Date(), isAI: true };
+      const aiMessage = { text: data.script, timestamp: new Date(), isAI: true };
       setMessages((prev) => [...prev, aiMessage]);
-
-      // Send generated script to video editor
-      onScriptGenerated(generatedScript);
       setInput('');
     } catch (error) {
-      console.error('Error generating script:', error);
-
-      // Show error message to user
       const errorMessage = {
         text: `Error: ${error instanceof Error ? error.message : 'Failed to generate script'}. Please check your OPEN_AI_API_KEY in the .env file.`,
         timestamp: new Date(),
@@ -190,6 +170,20 @@ export default function ScriptEditor({ onScriptGenerated, importedText }: Script
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleEditOption = (optionId: string) => {
+    setShowEditDropdown(false);
+    const prompts: Record<string, string> = {
+      rewrite: 'Can you rewrite this script with a different angle?',
+      shorter: 'Make this script shorter and punchier, under 30 seconds.',
+      longer: 'Expand this script with more details and examples.',
+      casual: 'Make this more casual and conversational, like I\'m talking to a friend.',
+      professional: 'Make this more professional and polished for a corporate audience.',
+      custom: '',
+    };
+    setInput(prompts[optionId] || '');
+    textareaRef.current?.focus();
   };
 
   const handleSaveSettings = () => {
@@ -203,58 +197,54 @@ export default function ScriptEditor({ onScriptGenerated, importedText }: Script
 
   return (
     <>
-      <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] flex flex-col h-[600px] overflow-hidden border border-slate-200/60">
+      <div className="bg-white rounded-xl shadow-linkedin flex flex-col h-[580px] overflow-hidden border border-linkedin-gray-200">
         {/* Header */}
-        <div className="px-5 py-4 border-b border-slate-200/60 bg-white">
+        <div className="px-4 py-3 border-b border-linkedin-gray-200 bg-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="relative">
-                <div className="p-2.5 bg-linkedin-blue rounded-xl shadow-sm">
-                  <HiSparkles className="w-5 h-5 text-white" />
+                <div className="p-2 bg-linkedin-blue rounded-lg shadow-sm">
+                  <PenTool className="w-4 h-4 text-white" />
                 </div>
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full border-2 border-white animate-pulse"></div>
+                <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-linkedin-success rounded-full border-2 border-white animate-pulse"></div>
               </div>
               <div>
-                <h3 className="text-base font-bold text-slate-800 tracking-tight">Script Writer</h3>
-                <p className="text-xs text-slate-500 mt-0.5">Transform ideas into engaging scripts</p>
+                <h3 className="text-sm font-semibold text-linkedin-gray-900">AI Script Writer</h3>
+                <p className="text-xs text-linkedin-gray-600 mt-0.5">Create engaging video scripts</p>
               </div>
             </div>
             <button
               onClick={() => setShowSettings(true)}
-              className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-linkedin-gray-100 rounded-lg transition-colors"
               title="Settings"
             >
-              <Settings className="w-5 h-5 text-slate-600" />
+              <Settings className="w-4 h-4 text-linkedin-gray-600" />
             </button>
           </div>
         </div>
 
       {/* Chat Area */}
-      <div className="flex-1 overflow-y-auto p-5 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {messages.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center px-4">
-            <div className="w-16 h-16 bg-linkedin-blue/10 rounded-2xl flex items-center justify-center mb-4">
-              <HiSparkles className="w-8 h-8 text-linkedin-blue" />
+          <div className="h-full flex flex-col items-center justify-center px-3">
+            <div className="w-14 h-14 bg-linkedin-blue/10 rounded-xl flex items-center justify-center mb-3">
+              <FileText className="w-6 h-6 text-linkedin-blue" />
             </div>
-            <h4 className="text-sm font-semibold text-slate-700 mb-2">Start Writing</h4>
-            <p className="text-xs text-slate-500 text-center leading-relaxed mb-5 max-w-[240px]">
-              Choose a prompt below or write your own script
+            <h4 className="text-sm font-semibold text-linkedin-gray-900 mb-1.5">Create Your Script</h4>
+            <p className="text-xs text-linkedin-gray-600 text-center leading-relaxed mb-4 max-w-[220px]">
+              Select a prompt below or describe what you want your video to be about
             </p>
 
             {/* Predefined Prompts */}
-            <div className="w-full space-y-2">
+            <div className="w-full space-y-1.5">
               {PREDEFINED_PROMPTS.map((prompt, idx) => (
                 <button
                   key={idx}
                   onClick={() => handlePromptClick(prompt)}
-                  className="w-full text-left px-4 py-3 bg-white hover:bg-linkedin-blue/5 border border-slate-200/60 rounded-xl text-xs text-slate-700 hover:text-linkedin-blue transition-all duration-200 hover:shadow-sm hover:border-linkedin-blue/30 group"
-                  style={{
-                    animationDelay: `${idx * 50}ms`,
-                    animation: 'fadeSlideUp 0.4s ease-out forwards',
-                  }}
+                  className="w-full text-left px-3 py-2.5 bg-white hover:bg-linkedin-blue/5 border border-linkedin-gray-200 rounded-lg text-xs text-linkedin-gray-700 hover:text-linkedin-blue transition-all duration-200 hover:shadow-sm hover:border-linkedin-blue/30 group"
                 >
                   <div className="flex items-center gap-2">
-                    <HiSparkles className="w-3.5 h-3.5 text-slate-400 group-hover:text-linkedin-blue transition-colors" />
+                    <Wand2 className="w-3 h-3 text-linkedin-gray-400 group-hover:text-linkedin-blue transition-colors" />
                     <span className="font-medium">{prompt}</span>
                   </div>
                 </button>
@@ -264,32 +254,69 @@ export default function ScriptEditor({ onScriptGenerated, importedText }: Script
         ) : (
           <>
             {messages.map((msg, idx) => (
-              <div
-                key={idx}
-                className={`flex ${msg.isAI ? 'justify-start' : 'justify-end'} animate-slideIn`}
-              >
-                <div className={`max-w-[85%] px-4 py-3 rounded-2xl shadow-md ${
-                  msg.isAI
-                    ? 'bg-slate-100 text-slate-800 rounded-tl-sm'
-                    : 'bg-linkedin-blue text-white rounded-tr-sm'
-                }`}>
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.text}</p>
-                  <p className={`text-[10px] mt-1.5 ${msg.isAI ? 'text-slate-500' : 'text-white/70'}`}>
-                    {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </p>
+              <div key={idx} className="animate-fade-in">
+                <div className={`flex ${msg.isAI ? 'justify-start' : 'justify-end'}`}>
+                  <div className={`max-w-[90%] px-3 py-2.5 rounded-xl shadow-sm ${
+                    msg.isAI
+                      ? 'bg-linkedin-gray-100 text-linkedin-gray-900 rounded-tl-sm'
+                      : 'bg-linkedin-blue text-white rounded-tr-sm'
+                  }`}>
+                    <p className="text-xs leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                    <p className={`text-[9px] mt-1 ${msg.isAI ? 'text-linkedin-gray-500' : 'text-white/70'}`}>
+                      {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
                 </div>
+                {/* AI Response Actions */}
+                {msg.isAI && idx === messages.length - 1 && !loading && (
+                  <div className="flex justify-start mt-2 ml-1">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => onScriptGenerated(msg.text)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-linkedin-blue text-white text-xs font-semibold rounded-full hover:bg-linkedin-blue-dark transition-all shadow-sm hover:shadow"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        Use This Script
+                      </button>
+                      <div className="relative" ref={editDropdownRef}>
+                        <button
+                          onClick={() => setShowEditDropdown(!showEditDropdown)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-linkedin-gray-300 text-linkedin-gray-700 text-xs font-semibold rounded-full hover:bg-linkedin-gray-50 hover:border-linkedin-gray-400 transition-all"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                          Edit More
+                          <ChevronDown className={`w-3 h-3 transition-transform ${showEditDropdown ? 'rotate-180' : ''}`} />
+                        </button>
+                        {showEditDropdown && (
+                          <div className="absolute top-full left-0 mt-1 w-56 bg-white border border-linkedin-gray-200 rounded-xl shadow-lg z-10 overflow-hidden">
+                            {EDIT_OPTIONS.map((option) => (
+                              <button
+                                key={option.id}
+                                onClick={() => handleEditOption(option.id)}
+                                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-linkedin-gray-50 transition-colors text-left"
+                              >
+                                <option.icon className="w-3.5 h-3.5 text-linkedin-gray-500" />
+                                <span className="text-xs text-linkedin-gray-700">{option.label}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
             {loading && (
-              <div className="flex justify-start animate-slideIn">
-                <div className="bg-slate-100 text-slate-800 px-4 py-3 rounded-2xl rounded-tl-sm shadow-md">
+              <div className="flex justify-start animate-fade-in">
+                <div className="bg-linkedin-gray-100 text-linkedin-gray-900 px-3 py-2.5 rounded-xl rounded-tl-sm shadow-sm">
                   <div className="flex items-center gap-2">
                     <div className="flex gap-1">
-                      <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                      <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                      <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                      <div className="w-1.5 h-1.5 bg-linkedin-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                      <div className="w-1.5 h-1.5 bg-linkedin-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                      <div className="w-1.5 h-1.5 bg-linkedin-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                     </div>
-                    <span className="text-xs text-slate-500">Generating script...</span>
+                    <span className="text-[10px] text-linkedin-gray-600">Writing your script...</span>
                   </div>
                 </div>
               </div>
@@ -300,61 +327,54 @@ export default function ScriptEditor({ onScriptGenerated, importedText }: Script
       </div>
 
       {/* Input Area */}
-      <div className="p-4 border-t border-slate-200/60 bg-white">
-        <div className="relative">
-          <textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Write your script..."
-            disabled={loading}
-            className="w-full pl-4 pr-24 py-3 text-sm border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-linkedin-blue/40 focus:border-linkedin-blue resize-none leading-relaxed placeholder:text-slate-400 bg-white shadow-sm transition-all duration-200 disabled:bg-slate-50 disabled:cursor-not-allowed"
-            rows={2}
-          />
-          <div className="absolute right-16 bottom-3.5 text-[10px] text-slate-400 font-medium pointer-events-none">
-            {input.length}
-          </div>
-          <button
-            onClick={handleSubmit}
-            disabled={!input.trim() || loading}
-            className="absolute right-2.5 bottom-2.5 p-2 bg-linkedin-blue text-white rounded-xl hover:bg-linkedin-blue-dark disabled:bg-slate-300 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md disabled:shadow-none"
-          >
-            {loading ? (
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            ) : (
-              <ArrowUp className="w-5 h-5" strokeWidth={2.5} />
+      <div className="p-3 border-t border-linkedin-gray-200 bg-white">
+        <div className="space-y-2">
+          <div className="relative">
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Describe your video idea..."
+              className="w-full px-3 py-2.5 pr-10 text-xs border border-linkedin-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-linkedin-blue/40 focus:border-linkedin-blue resize-none leading-relaxed placeholder:text-linkedin-gray-400 bg-white shadow-sm transition-all duration-200"
+              rows={2}
+            />
+            {loading && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                <div className="w-4 h-4 border-2 border-linkedin-blue border-t-transparent rounded-full animate-spin"></div>
+              </div>
             )}
-          </button>
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="text-[9px] text-linkedin-gray-400 font-medium">
+              {input.length} characters
+            </div>
+            <button
+              onClick={handleSubmit}
+              disabled={!input.trim() || loading}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-linkedin-blue text-white text-xs font-medium rounded-lg hover:bg-linkedin-blue-dark disabled:bg-linkedin-gray-300 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
+            >
+              {loading ? (
+                <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <ArrowUp className="w-3.5 h-3.5" strokeWidth={2.5} />
+              )}
+              <span>Send</span>
+            </button>
+          </div>
         </div>
       </div>
 
       <style jsx>{`
         @keyframes fadeSlideUp {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
         }
-
         @keyframes slideIn {
-          from {
-            opacity: 0;
-            transform: translateX(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
+          from { opacity: 0; transform: translateX(20px); }
+          to { opacity: 1; transform: translateX(0); }
         }
-
-        .animate-slideIn {
-          animation: slideIn 0.3s ease-out;
-        }
+        .animate-slideIn { animation: slideIn 0.3s ease-out; }
       `}</style>
     </div>
 
@@ -362,33 +382,27 @@ export default function ScriptEditor({ onScriptGenerated, importedText }: Script
     {showSettings && (
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-          {/* Modal Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-linkedin-gray-200">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-linkedin-blue/10 rounded-lg">
                 <Settings className="w-5 h-5 text-linkedin-blue" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-slate-800">Customize Master Prompt</h3>
-                <p className="text-xs text-slate-500">Personalize how the AI writes your scripts</p>
+                <h3 className="text-lg font-bold text-linkedin-gray-900">Customize Master Prompt</h3>
+                <p className="text-xs text-linkedin-gray-500">Personalize how the AI writes your scripts</p>
               </div>
             </div>
             <button
               onClick={() => setShowSettings(false)}
-              className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-linkedin-gray-100 rounded-lg transition-colors"
             >
-              <X className="w-5 h-5 text-slate-600" />
+              <X className="w-5 h-5 text-linkedin-gray-600" />
             </button>
           </div>
-
-          {/* Modal Content */}
           <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
-            {/* Master Prompt Section */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-semibold text-slate-700">
-                  Master Prompt
-                </label>
+                <label className="block text-sm font-semibold text-linkedin-gray-700">Master Prompt</label>
                 <button
                   onClick={handleResetPrompt}
                   className="text-xs text-linkedin-blue hover:text-linkedin-blue-dark font-semibold transition-colors"
@@ -400,19 +414,17 @@ export default function ScriptEditor({ onScriptGenerated, importedText }: Script
                 value={masterPrompt}
                 onChange={(e) => setMasterPrompt(e.target.value)}
                 rows={18}
-                className="w-full px-4 py-3 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-linkedin-blue/40 focus:border-linkedin-blue resize-none leading-relaxed bg-white shadow-sm transition-all font-mono"
+                className="w-full px-4 py-3 text-xs border border-linkedin-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-linkedin-blue/40 focus:border-linkedin-blue resize-none leading-relaxed bg-white shadow-sm transition-all font-mono"
               />
-              <p className="mt-2 text-xs text-slate-500">
+              <p className="mt-2 text-xs text-linkedin-gray-500">
                 This prompt guides how the AI generates scripts. It now includes your name (Thor Odinson), role (Senior Product Manager), and company (GSOBA) for personalized scripts.
               </p>
             </div>
           </div>
-
-          {/* Modal Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200 bg-slate-50">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-linkedin-gray-200 bg-linkedin-gray-50">
             <button
               onClick={() => setShowSettings(false)}
-              className="px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200 rounded-xl transition-colors"
+              className="px-4 py-2 text-sm font-semibold text-linkedin-gray-700 hover:bg-linkedin-gray-200 rounded-xl transition-colors"
             >
               Cancel
             </button>
