@@ -1,26 +1,147 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #F3F2EF;
+  --foreground: #191919;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Helvetica Neue', sans-serif;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@layer components {
+  .linkedin-card {
+    @apply bg-white rounded-xl shadow-linkedin transition-shadow duration-300;
+  }
+
+  .linkedin-card:hover {
+    @apply shadow-linkedin-hover;
+  }
+
+  .linkedin-button-primary {
+    @apply bg-linkedin-blue hover:bg-linkedin-blue-dark text-white
+           font-semibold py-2.5 px-6 rounded-full transition-all duration-200
+           hover:shadow-md active:scale-[0.98];
+  }
+
+  .linkedin-button-secondary {
+    @apply bg-transparent hover:bg-linkedin-gray-100 text-linkedin-blue
+           border-2 border-linkedin-blue font-semibold py-2.5 px-6 rounded-full
+           transition-all duration-200 hover:shadow-sm active:scale-[0.98];
+  }
+
+  .linkedin-button-ghost {
+    @apply bg-transparent hover:bg-linkedin-gray-200 text-linkedin-gray-800
+           font-semibold py-2 px-4 rounded-lg transition-all duration-200
+           active:scale-[0.98];
+  }
+
+  .linkedin-input {
+    @apply w-full px-4 py-2.5 border border-linkedin-gray-300 rounded-lg
+           focus:outline-none focus:ring-2 focus:ring-linkedin-blue focus:border-transparent
+           transition-all duration-200 bg-white;
+  }
+
+  .linkedin-textarea {
+    @apply w-full px-4 py-3 border border-linkedin-gray-300 rounded-lg
+           focus:outline-none focus:ring-2 focus:ring-linkedin-blue focus:border-transparent
+           resize-none transition-all duration-200 bg-white;
+  }
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f3f2ef;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c4c4c4;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #767676;
+}
+
+/* Fade in animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Pulse animation for loading states */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Custom range slider styling */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #0A66C2;
+  cursor: pointer;
+  border: 3px solid white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: all 0.15s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 2px 6px rgba(10, 102, 194, 0.3);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #0A66C2;
+  cursor: pointer;
+  border: 3px solid white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: all 0.15s ease;
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 2px 6px rgba(10, 102, 194, 0.3);
 }
