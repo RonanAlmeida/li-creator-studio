@@ -1,5 +1,7 @@
 'use client';
 
+import { FileText, Hash, Mic, Music, MessageSquare, Image, Eye, Play } from 'lucide-react';
+
 interface ProgressBarProps {
   currentStep: number;
   completedSteps: Set<number>;
@@ -7,14 +9,14 @@ interface ProgressBarProps {
 }
 
 const STEPS = [
-  { label: 'Script', icon: '📝' },
-  { label: 'Hashtags', icon: '#️⃣' },
-  { label: 'Voice', icon: '🎤' },
-  { label: 'Music', icon: '🎵' },
-  { label: 'Captions', icon: '💬' },
-  { label: 'Images', icon: '🖼️' },
-  { label: 'Review', icon: '👁️' },
-  { label: 'Preview', icon: '▶️' },
+  { label: 'Script', Icon: FileText },
+  { label: 'Hashtags', Icon: Hash },
+  { label: 'Voice', Icon: Mic },
+  { label: 'Music', Icon: Music },
+  { label: 'Captions', Icon: MessageSquare },
+  { label: 'Images', Icon: Image },
+  { label: 'Review', Icon: Eye },
+  { label: 'Preview', Icon: Play },
 ];
 
 export default function ProgressBar({
@@ -33,13 +35,13 @@ export default function ProgressBar({
   };
 
   return (
-    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100 py-6 px-4">
+    <div className="bg-white border-b border-gray-200 py-6 px-4">
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between relative">
           {/* Progress line */}
-          <div className="absolute top-5 left-0 right-0 h-1 bg-blue-100 -z-10 rounded-full">
+          <div className="absolute top-5 left-0 right-0 h-0.5 bg-gray-200 -z-10">
             <div
-              className="h-full bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 transition-all duration-500 rounded-full shadow-sm"
+              className="h-full bg-gradient-to-r from-[#0A66C2] to-[#004182] transition-all duration-500"
               style={{
                 width: `${((currentStep - 1) / (STEPS.length - 1)) * 100}%`,
               }}
@@ -50,6 +52,7 @@ export default function ProgressBar({
             const step = index + 1;
             const status = getStepStatus(step);
             const clickable = canClickStep(step);
+            const { Icon } = stepData;
 
             return (
               <div
@@ -61,33 +64,29 @@ export default function ProgressBar({
                   onClick={() => clickable && onStepClick(step)}
                   disabled={!clickable}
                   className={`
-                    w-11 h-11 rounded-full flex items-center justify-center
-                    font-semibold text-lg transition-all duration-300 transform
+                    w-10 h-10 rounded-full flex items-center justify-center
+                    transition-all duration-300
                     ${
                       status === 'completed'
-                        ? 'bg-gradient-to-br from-blue-400 to-blue-600 text-white shadow-lg scale-100'
+                        ? 'bg-gradient-to-r from-[#0A66C2] to-[#004182] text-white'
                         : status === 'active'
-                        ? 'bg-gradient-to-br from-blue-500 to-blue-700 text-white shadow-xl scale-110 ring-4 ring-blue-200 animate-pulse'
-                        : 'bg-white text-gray-400 border-2 border-gray-200'
+                        ? 'bg-[#0A66C2] text-white animate-pulse'
+                        : 'bg-gray-200 text-gray-500'
                     }
-                    ${clickable ? 'cursor-pointer hover:scale-110 hover:shadow-lg' : 'cursor-not-allowed'}
+                    ${clickable ? 'cursor-pointer hover:scale-110' : 'cursor-not-allowed'}
                   `}
                 >
-                  {status === 'completed' ? (
-                    <span className="text-xl">✓</span>
-                  ) : (
-                    <span className="text-xl">{stepData.icon}</span>
-                  )}
+                  <Icon className="w-5 h-5" />
                 </button>
 
                 <span
                   className={`
-                    mt-2 text-xs font-medium hidden md:block transition-colors duration-300
+                    mt-2 text-xs font-medium hidden md:block
                     ${
                       status === 'active'
-                        ? 'text-blue-700 font-semibold'
+                        ? 'text-[#0A66C2]'
                         : status === 'completed'
-                        ? 'text-blue-600'
+                        ? 'text-gray-700'
                         : 'text-gray-400'
                     }
                   `}
