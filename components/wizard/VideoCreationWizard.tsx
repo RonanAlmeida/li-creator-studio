@@ -172,63 +172,40 @@ export default function VideoCreationWizard({
   };
 
   const handleGenerate = async () => {
-    updateState({ isGenerating: true, loadingStage: 'Generating audio...' });
+    updateState({ isGenerating: true, loadingStage: 'Generating video...' });
 
     try {
-      // Step 1: Generate audio and transcription
-      const transcribeResponse = await fetch('/api/audio/transcribe', {
+      // Call /api/video/overlay which does everything:
+      // 1. Generate audio (ElevenLabs)
+      // 2. Transcribe (Whisper)
+      // 3. Overlay on video with captions + images
+      const overlayResponse = await fetch('/api/video/overlay', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text: wizardState.scriptText,
           voiceId: wizardState.selectedVoiceId,
-        }),
-      });
-
-      if (!transcribeResponse.ok) {
-        const errorData = await transcribeResponse.json();
-        throw new Error(errorData.error || 'Transcription failed');
-      }
-      const transcribeData = await transcribeResponse.json();
-
-      if (!transcribeData.success) {
-        throw new Error(transcribeData.error || 'Transcription failed');
-      }
-
-      updateState({
-        loadingStage: 'Creating video...',
-        transcriptLines: transcribeData.transcriptLines || [],
-      });
-
-      // Step 2: Create video with overlays and captions
-      const overlayResponse = await fetch('/api/video/overlay', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          audioPath: transcribeData.audioPath,
-          srtPath: transcribeData.srtPath,
-          jobId: transcribeData.jobId,
+          captions: wizardState.captionOptions,
+          backgroundMusic: wizardState.selectedMusicId,
           imageOverlays: wizardState.imageOverlays,
-          captionOptions: wizardState.captionOptions,
-          backgroundMusicId: wizardState.selectedMusicId,
         }),
       });
 
       if (!overlayResponse.ok) {
         const errorData = await overlayResponse.json();
-        throw new Error(errorData.error || 'Video overlay failed');
+        throw new Error(errorData.error || 'Video generation failed');
       }
       const overlayData = await overlayResponse.json();
 
       if (!overlayData.success) {
-        throw new Error(overlayData.error || 'Video overlay failed');
+        throw new Error(overlayData.error || 'Video generation failed');
       }
 
       const videoResult: VideoResult = {
-        id: transcribeData.jobId || '',
-        url: `/videos/${transcribeData.jobId}.mp4`,
+        id: overlayData.jobId || wizardState.jobId,
+        url: `/generated-videos/final/${overlayData.jobId || wizardState.jobId}.mp4`,
         thumbnail: '', // TODO: Generate thumbnail
-        duration: transcribeData.duration || 0,
+        duration: overlayData.duration || 0,
         resolution: '1080x1920',
         captionsIncluded: wizardState.captionOptions.enabled,
         captionOptions: wizardState.captionOptions,
