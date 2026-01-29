@@ -25,6 +25,7 @@ const PRESET_COLORS = [
 ];
 
 const FONTS = [
+  { name: 'Reddit Sans', value: 'Reddit Sans, sans-serif' },
   { name: 'Inter', value: 'Inter, system-ui, sans-serif' },
   { name: 'Roboto', value: 'Roboto, sans-serif' },
   { name: 'Poppins', value: 'Poppins, sans-serif' },

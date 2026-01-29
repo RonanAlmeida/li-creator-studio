@@ -7,16 +7,18 @@ import { CAPTION_DEFAULTS, TEXT_LIMITS } from '@/lib/constants';
 import { validateTextLength } from '@/lib/utils';
 import { generateTextToVideo, generateImageToVideo, overlayAudioAndCaptions } from '@/lib/api';
 import { DEFAULT_VOICE } from '@/lib/constants/voices';
+import { BACKGROUND_MUSIC_TRACKS } from '@/lib/constants/background-music';
 import PostLibrary from '@/components/studio/PostLibrary';
 import ScriptEditor from '@/components/studio/ScriptEditor';
 import TextInput from '@/components/forms/TextInput';
 import CaptionCustomizer from '@/components/forms/CaptionCustomizer';
 import VoiceSelector from '@/components/forms/VoiceSelector';
+import BackgroundMusicSelector from '@/components/forms/BackgroundMusicSelector';
 import Button from '@/components/forms/Button';
 import VideoPreview from '@/components/studio/VideoPreview';
 import CampaignWizard from '@/components/studio/CampaignWizard';
 import { ToastContainer } from '@/components/ui/Toast';
-import { Video, Image, Type, Play, Sparkles, TrendingUp, BarChart3, Clock, FileText, ImagePlus, Clapperboard, Settings } from 'lucide-react';
+import { Video, Image, Type, Play, Sparkles, TrendingUp, BarChart3, Clock, FileText, ImagePlus, Clapperboard, Settings, ChevronDown } from 'lucide-react';
 
 type GenerationType = 'text-to-video' | 'image-to-video' | 'video-to-video';
 
@@ -40,6 +42,7 @@ export default function Home() {
   const [showSettings, setShowSettings] = useState(false);
   const [lastImportedPostImage, setLastImportedPostImage] = useState<string | null>(null);
   const [selectedVoiceId, setSelectedVoiceId] = useState<string>(DEFAULT_VOICE.id);
+  const [selectedMusicId, setSelectedMusicId] = useState<string>('none');
 
   const addToast = (type: 'success' | 'error' | 'info', message: string) => {
     const toast: ToastMessage = {
@@ -178,8 +181,12 @@ export default function Home() {
       // Stage 3: Overlaying audio and captions
       setTimeout(() => setLoadingStage('Overlaying audio and captions on video...'), 10000);
 
+      // Get background music filename if selected
+      const backgroundMusicFilename = selectedMusicId !== 'none' ?
+        BACKGROUND_MUSIC_TRACKS.find(m => m.id === selectedMusicId)?.filename : undefined;
+
       // Call overlay API to add audio and captions to sample video
-      const video = await overlayAudioAndCaptions(text, selectedVoiceId, captionOptions);
+      const video = await overlayAudioAndCaptions(text, selectedVoiceId, captionOptions, backgroundMusicFilename);
 
       setGeneratedVideo(video);
       addToast('success', 'Video generated successfully!');
@@ -330,6 +337,12 @@ export default function Home() {
                       onVoiceChange={setSelectedVoiceId}
                     />
 
+                    {/* Background Music Selector */}
+                    <BackgroundMusicSelector
+                      selectedMusicId={selectedMusicId}
+                      onMusicChange={setSelectedMusicId}
+                    />
+
                     {/* Hashtags Input */}
                     <div>
                       <label className="block text-sm font-semibold text-linkedin-gray-700 mb-2">
@@ -426,6 +439,18 @@ export default function Home() {
                           placeholder="Describe what you want your video to convey... Your story, insight, or idea that connects with your professional audience"
                           rows={12}
                           error={error}
+                        />
+
+                        {/* Voice Selector */}
+                        <VoiceSelector
+                          selectedVoiceId={selectedVoiceId}
+                          onVoiceChange={setSelectedVoiceId}
+                        />
+
+                        {/* Background Music Selector */}
+                        <BackgroundMusicSelector
+                          selectedMusicId={selectedMusicId}
+                          onMusicChange={setSelectedMusicId}
                         />
 
                         {/* Hashtags */}
@@ -528,6 +553,18 @@ export default function Home() {
                           error={error}
                         />
 
+                        {/* Voice Selector */}
+                        <VoiceSelector
+                          selectedVoiceId={selectedVoiceId}
+                          onVoiceChange={setSelectedVoiceId}
+                        />
+
+                        {/* Background Music Selector */}
+                        <BackgroundMusicSelector
+                          selectedMusicId={selectedMusicId}
+                          onMusicChange={setSelectedMusicId}
+                        />
+
                         {/* Hashtags */}
                         <div>
                           <label className="block text-sm font-semibold text-linkedin-gray-700 mb-2">
@@ -586,9 +623,10 @@ export default function Home() {
               </div>
               <button
                 onClick={() => setShowScriptWriter(!showScriptWriter)}
-                className="text-xs text-linkedin-blue hover:text-linkedin-blue-dark font-medium transition-colors"
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-linkedin-blue hover:bg-linkedin-blue/10 transition-colors"
               >
-                {showScriptWriter ? 'Collapse' : 'Expand'}
+                <span>{showScriptWriter ? 'Collapse' : 'Expand'}</span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showScriptWriter ? 'rotate-180' : ''}`} />
               </button>
             </div>
             

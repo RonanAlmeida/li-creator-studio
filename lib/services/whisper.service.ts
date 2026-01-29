@@ -1,6 +1,7 @@
-import OpenAI from 'openai';
 import fs from 'fs';
 import path from 'path';
+import FormData from 'form-data';
+import axios from 'axios';
 
 export interface TranscriptSegment {
   start: number;
@@ -28,20 +29,38 @@ export async function transcribeAudio(
 
   console.log(`[Whisper] Transcribing audio for job ${jobId}`);
 
-  const client = new OpenAI({ apiKey });
-
   try {
-    // Create read stream from audio file
-    const audioFile = fs.createReadStream(audioPath);
-
-    // Transcribe audio to SRT format (includes timestamps)
-    const transcription = await client.audio.transcriptions.create({
-      file: audioFile,
-      model: 'whisper-1',
-      response_format: 'srt',
+    // Use form-data with axios (better multipart handling)
+    const formData = new FormData();
+    formData.append('file', fs.createReadStream(audioPath), {
+      filename: path.basename(audioPath),
+      contentType: 'audio/mpeg',
     });
+    formData.append('model', 'whisper-1');
+    formData.append('response_format', 'srt');
 
-    // Save SRT file
+    // Make API call using axios
+    const response = await axios.post(
+      'https://api.openai.com/v1/audio/transcriptions',
+      formData,
+      {
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          ...formData.getHeaders(),
+        },
+        responseType: 'text',
+      }
+    );
+
+    const transcription = response.data;
+
+    // Parse SRT to extract segments
+    const segments = parseSRT(transcription);
+
+    // Re-segment into 3-word chunks for better readability
+    const chunkedSRT = createChunkedSRT(segments);
+
+    // Save re-chunked SRT file
     const transcriptDir = path.join(process.cwd(), 'public', 'generated-videos', 'transcripts');
     const srtPath = path.join(transcriptDir, `${jobId}.srt`);
 
@@ -50,22 +69,72 @@ export async function transcribeAudio(
       fs.mkdirSync(transcriptDir, { recursive: true });
     }
 
-    // Write SRT content to file
-    fs.writeFileSync(srtPath, transcription);
+    // Write chunked SRT content to file
+    fs.writeFileSync(srtPath, chunkedSRT);
 
-    console.log(`[Whisper] Transcription saved to ${srtPath}`);
+    console.log(`[Whisper] Transcription saved to ${srtPath} (3 words per caption)`);
 
-    // Parse SRT to extract segments
-    const segments = parseSRT(transcription);
+    // Parse the chunked SRT
+    const finalSegments = parseSRT(chunkedSRT);
 
     return {
       srtPath,
-      segments,
+      segments: finalSegments,
     };
   } catch (error) {
     console.error('[Whisper] Error transcribing audio:', error);
     throw new Error(`Failed to transcribe audio: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
+}
+
+/**
+ * Re-chunk segments into 3-word captions
+ */
+function createChunkedSRT(segments: TranscriptSegment[]): string {
+  const chunks: { start: number; end: number; text: string }[] = [];
+  let chunkIndex = 1;
+
+  segments.forEach((segment) => {
+    const words = segment.text.trim().split(/\s+/);
+    const totalWords = words.length;
+    const segmentDuration = segment.end - segment.start;
+    const timePerWord = segmentDuration / totalWords;
+
+    // Split into 3-word chunks
+    for (let i = 0; i < totalWords; i += 3) {
+      const chunkWords = words.slice(i, i + 3);
+      const chunkStart = segment.start + (i * timePerWord);
+      const chunkEnd = segment.start + ((i + chunkWords.length) * timePerWord);
+
+      chunks.push({
+        start: chunkStart,
+        end: chunkEnd,
+        text: chunkWords.join(' '),
+      });
+    }
+  });
+
+  // Build SRT format
+  let srtOutput = '';
+  chunks.forEach((chunk, index) => {
+    srtOutput += `${index + 1}\n`;
+    srtOutput += `${formatSRTTime(chunk.start)} --> ${formatSRTTime(chunk.end)}\n`;
+    srtOutput += `${chunk.text}\n\n`;
+  });
+
+  return srtOutput;
+}
+
+/**
+ * Format seconds to SRT timestamp (HH:MM:SS,mmm)
+ */
+function formatSRTTime(seconds: number): string {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = Math.floor(seconds % 60);
+  const milliseconds = Math.floor((seconds % 1) * 1000);
+
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')},${String(milliseconds).padStart(3, '0')}`;
 }
 
 /**

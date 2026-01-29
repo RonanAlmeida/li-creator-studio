@@ -32,10 +32,10 @@ export const FILE_LIMITS = {
 export const CAPTION_DEFAULTS = {
   enabled: true,
   style: 'bold' as const,
-  fontFamily: 'Inter, system-ui, sans-serif',
+  fontFamily: 'Reddit Sans, sans-serif',
   position: 'bottom' as const,
   color: '#FFFFFF',
-  size: 24,
+  size: 18,
 };
 
 export const CAMPAIGN_OBJECTIVES = [

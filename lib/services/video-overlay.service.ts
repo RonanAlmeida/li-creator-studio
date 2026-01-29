@@ -21,7 +21,8 @@ export async function overlayAudioAndCaptions(
   text: string,
   voiceId: string,
   captionOptions: CaptionOptions,
-  jobId: string
+  jobId: string,
+  backgroundMusicPath?: string
 ): Promise<VideoOverlayResult> {
   console.log(`[Video Overlay] Starting audio and caption overlay for job ${jobId}`);
   console.log(`[Video Overlay] Input video: ${videoPath}`);
@@ -57,21 +58,60 @@ export async function overlayAudioAndCaptions(
     // Build subtitle style
     const subtitleStyle = buildSubtitleStyle(captionOptions);
 
+    // Escape the SRT path for ffmpeg filter syntax
+    // Replace backslashes with forward slashes, escape colons and spaces
+    const escapedSrtPath = srtPath
+      .replace(/\\/g, '/')
+      .replace(/:/g, '\\:')
+      .replace(/ /g, '\\ ');
+
     await new Promise<void>((resolve, reject) => {
-      ffmpeg()
+      const command = ffmpeg()
         .input(videoPath)
-        .input(audioPath)
-        .outputOptions([
-          '-map', '0:v',           // Video from first input (original video)
-          '-map', '1:a',           // Audio from second input (generated audio)
-          '-c:v', 'libx264',       // Re-encode video (needed for subtitle overlay)
-          '-preset', 'fast',       // Encoding speed
-          '-crf', '23',            // Quality (lower = better, 18-28 recommended)
-          '-vf', `subtitles=${srtPath}:force_style='${subtitleStyle}'`, // Subtitle overlay
-          '-c:a', 'aac',           // Audio codec
-          '-b:a', '192k',          // Audio bitrate
-          '-shortest',             // Match shortest input duration
-        ])
+        .input(audioPath);
+
+      // Add background music if provided
+      if (backgroundMusicPath && fs.existsSync(backgroundMusicPath)) {
+        console.log(`[Video Overlay] Adding background music: ${backgroundMusicPath}`);
+        command.input(backgroundMusicPath);
+
+        // Mix narration (100% volume) with background music (25% volume)
+        command
+          .complexFilter([
+            '[1:a]volume=1.0[narration]',        // Narration at full volume
+            '[2:a]volume=0.25[bgmusic]',         // Background music at 25% volume
+            '[narration][bgmusic]amix=inputs=2:duration=shortest[aout]', // Mix both
+            `[0:v]subtitles='${escapedSrtPath}':force_style='${subtitleStyle}'[v]`, // Apply subtitles
+          ])
+          .outputOptions([
+            '-map', '[v]',                       // Video with subtitles
+            '-map', '[aout]',                    // Mixed audio output
+            '-c:v', 'libx264',
+            '-preset', 'fast',
+            '-crf', '23',
+            '-c:a', 'aac',
+            '-b:a', '192k',
+            '-shortest',
+          ]);
+      } else {
+        // No background music - just narration with subtitles in complex filter
+        command
+          .complexFilter([
+            `[0:v]subtitles='${escapedSrtPath}':force_style='${subtitleStyle}'[v]`, // Apply subtitles
+          ])
+          .outputOptions([
+            '-map', '[v]',
+            '-map', '1:a',
+            '-c:v', 'libx264',
+            '-preset', 'fast',
+            '-crf', '23',
+            '-c:a', 'aac',
+            '-b:a', '192k',
+            '-shortest',
+          ]);
+      }
+
+      command
         .output(outputPath)
         .on('start', (commandLine) => {
           console.log(`[Video Overlay] Command: ${commandLine}`);

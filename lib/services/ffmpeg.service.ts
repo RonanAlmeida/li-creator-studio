@@ -59,9 +59,9 @@ export async function overlaySubtitles(
 export function buildSubtitleStyle(options: CaptionOptions): string {
   const styles: string[] = [];
 
-  // Font family
+  // Font family (escape spaces with backslashes for ASS format)
   if (options.fontFamily) {
-    const fontName = options.fontFamily.split(',')[0].trim().replace(/['"]/g, '');
+    const fontName = options.fontFamily.split(',')[0].trim().replace(/['"]/g, '').replace(/ /g, '\\ ');
     styles.push(`FontName=${fontName}`);
   }
 

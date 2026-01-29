@@ -66,12 +66,13 @@ export async function generateVideoCaptions(
 export async function overlayAudioAndCaptions(
   text: string,
   voiceId: string,
-  captions?: CaptionOptions
+  captions?: CaptionOptions,
+  backgroundMusic?: string
 ): Promise<VideoResult> {
   const response = await fetch('/api/video/overlay', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text, voiceId, captions }),
+    body: JSON.stringify({ text, voiceId, captions, backgroundMusic }),
   });
 
   if (!response.ok) {

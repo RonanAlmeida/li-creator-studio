@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
   try {
     // Parse request body
     const body = await request.json();
-    const { text, voiceId, captions } = body;
+    const { text, voiceId, captions, backgroundMusic } = body;
 
     // Validate input
     if (!text || typeof text !== 'string') {
@@ -48,9 +48,9 @@ export async function POST(request: NextRequest) {
       enabled: true,
       position: 'bottom',
       style: 'bold',
-      size: 24,
+      size: 18,
       color: '#FFFFFF',
-      fontFamily: 'Inter',
+      fontFamily: 'Reddit Sans',
     };
 
     // Generate unique job ID
@@ -66,13 +66,25 @@ export async function POST(request: NextRequest) {
       'sample_falai_output.mp4'
     );
 
+    // Path to background music (if selected)
+    let backgroundMusicPath: string | undefined;
+    if (backgroundMusic) {
+      backgroundMusicPath = path.join(
+        process.cwd(),
+        'public',
+        'background-music',
+        backgroundMusic
+      );
+    }
+
     // Overlay audio and captions on sample video
     const result = await overlayAudioAndCaptions(
       sampleVideoPath,
       text,
       voiceId,
       captionOptions,
-      jobId
+      jobId,
+      backgroundMusicPath
     );
 
     console.log(`[API] Video overlay complete: ${jobId}`);
@@ -81,10 +93,12 @@ export async function POST(request: NextRequest) {
     const video = {
       id: jobId,
       url: `/generated-videos/final/${jobId}.mp4`,
-      thumbnail: `/generated-videos/videos/sample_falai_output.mp4`, // Use sample as thumbnail
+      thumbnail: `/generated-videos/videos/sample_falai_output.mp4`,
       duration: result.duration,
-      resolution: '1920x1080', // Assuming sample video resolution
+      resolution: '606x1080', // Sample video actual resolution
       transcript: text,
+      captionsIncluded: true,
+      captionOptions: captionOptions,
       createdAt: new Date().toISOString(),
     };
 

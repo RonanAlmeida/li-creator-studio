@@ -13,6 +13,15 @@ interface VideoPreviewProps {
 }
 
 export default function VideoPreview({ video, onRegenerate, onLaunchCampaign }: VideoPreviewProps) {
+  const handleDownload = () => {
+    const link = document.createElement('a');
+    link.href = video.url;
+    link.download = `video-${video.id}.mp4`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <Card className="mt-6">
       <div className="flex items-center gap-2 mb-4">
@@ -23,17 +32,16 @@ export default function VideoPreview({ video, onRegenerate, onLaunchCampaign }: 
       </div>
 
       <div className="space-y-6">
-        {/* Video Player Placeholder */}
-        <div className="relative bg-linkedin-gray-900 rounded-lg overflow-hidden aspect-video flex items-center justify-center">
-          <div className="text-center text-white">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/20 flex items-center justify-center">
-              <div className="w-0 h-0 border-t-[8px] border-t-transparent border-l-[14px] border-l-white border-b-[8px] border-b-transparent ml-1"></div>
-            </div>
-            <p className="text-sm">Video Preview</p>
-            <p className="text-xs text-white/70 mt-1">
-              {formatDuration(video.duration)} • {video.resolution}
-            </p>
-          </div>
+        {/* Real Video Player */}
+        <div className="relative bg-linkedin-gray-900 rounded-lg overflow-hidden">
+          <video
+            src={video.url}
+            controls
+            className="w-full"
+            controlsList="nodownload"
+          >
+            Your browser does not support the video tag.
+          </video>
         </div>
 
         {/* Video Metadata */}
@@ -65,19 +73,28 @@ export default function VideoPreview({ video, onRegenerate, onLaunchCampaign }: 
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <Button variant="secondary" onClick={onRegenerate} className="flex-1">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <button
+            onClick={onRegenerate}
+            className="flex items-center justify-center gap-2 px-4 py-3 bg-white border border-linkedin-gray-300 rounded-lg text-sm font-semibold text-linkedin-gray-700 hover:bg-linkedin-gray-50 hover:border-linkedin-gray-400 transition-all shadow-sm hover:shadow"
+          >
             <RefreshCw className="w-4 h-4" />
-            Regenerate
-          </Button>
-          <Button variant="secondary" className="flex-1">
+            <span>Regenerate</span>
+          </button>
+          <button
+            onClick={handleDownload}
+            className="flex items-center justify-center gap-2 px-4 py-3 bg-white border border-linkedin-gray-300 rounded-lg text-sm font-semibold text-linkedin-gray-700 hover:bg-linkedin-gray-50 hover:border-linkedin-gray-400 transition-all shadow-sm hover:shadow"
+          >
             <Download className="w-4 h-4" />
-            Download Video
-          </Button>
-          <Button onClick={onLaunchCampaign} className="flex-1 sm:flex-[1.5]">
+            <span>Download</span>
+          </button>
+          <button
+            onClick={onLaunchCampaign}
+            className="flex items-center justify-center gap-2 px-4 py-3 bg-linkedin-blue rounded-lg text-sm font-semibold text-white hover:bg-linkedin-blue-dark transition-all shadow-sm hover:shadow-md"
+          >
             <Rocket className="w-4 h-4" />
-            Launch LinkedIn Campaign
-          </Button>
+            <span>Launch Campaign</span>
+          </button>
         </div>
       </div>
     </Card>
