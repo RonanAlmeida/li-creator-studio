@@ -5,11 +5,12 @@ import { TabId, VideoResult, ToastMessage, CaptionOptions } from '@/types';
 import { generateId } from '@/lib/utils';
 import { CAPTION_DEFAULTS, TEXT_LIMITS } from '@/lib/constants';
 import { validateTextLength } from '@/lib/utils';
-import { generateTextToVideo, generateImageToVideo, overlayAudioAndCaptions } from '@/lib/api';
+import { generateTextToVideo, generateImageToVideo, overlayAudioAndCaptions, overlayExistingAudio, transcribeAudioWithTimestamps } from '@/lib/api';
 import { DEFAULT_VOICE } from '@/lib/constants/voices';
 import { BACKGROUND_MUSIC_TRACKS } from '@/lib/constants/background-music';
 import PostLibrary from '@/components/studio/PostLibrary';
 import ScriptEditor from '@/components/studio/ScriptEditor';
+import { ImageGenerator } from '@/components/studio/ImageGenerator';
 import TextInput from '@/components/forms/TextInput';
 import CaptionCustomizer from '@/components/forms/CaptionCustomizer';
 import VoiceSelector from '@/components/forms/VoiceSelector';
@@ -19,6 +20,7 @@ import VideoPreview from '@/components/studio/VideoPreview';
 import CampaignWizard from '@/components/studio/CampaignWizard';
 import { ToastContainer } from '@/components/ui/Toast';
 import { Video, Image, Type, Play, Sparkles, TrendingUp, BarChart3, Clock, FileText, ImagePlus, Clapperboard, Settings, ChevronDown } from 'lucide-react';
+import type { ImageOverlay, TranscriptLine } from '@/lib/types/image-overlay';
 
 type GenerationType = 'text-to-video' | 'image-to-video' | 'video-to-video';
 
@@ -43,6 +45,10 @@ export default function Home() {
   const [lastImportedPostImage, setLastImportedPostImage] = useState<string | null>(null);
   const [selectedVoiceId, setSelectedVoiceId] = useState<string>(DEFAULT_VOICE.id);
   const [selectedMusicId, setSelectedMusicId] = useState<string>('none');
+  const [showImageGenerator, setShowImageGenerator] = useState(false);
+  const [transcriptLines, setTranscriptLines] = useState<TranscriptLine[]>([]);
+  const [imageOverlays, setImageOverlays] = useState<ImageOverlay[]>([]);
+  const [currentJobId, setCurrentJobId] = useState<string>('');
 
   const addToast = (type: 'success' | 'error' | 'info', message: string) => {
     const toast: ToastMessage = {
@@ -75,6 +81,34 @@ export default function Home() {
     setTimeout(() => {
       setImportedPost(null);
     }, 500);
+  };
+
+  const estimateLineTimings = (script: string): TranscriptLine[] => {
+    // Split script into sentences
+    const sentences = script.split(/[.!?]+/).filter(s => s.trim().length > 0);
+
+    // Estimate ~150 words per minute speaking rate = 2.5 words per second
+    const wordsPerSecond = 2.5;
+    let currentTime = 0;
+    const lines: TranscriptLine[] = [];
+
+    sentences.forEach((sentence) => {
+      const text = sentence.trim();
+      if (text.length === 0) return;
+
+      const wordCount = text.split(/\s+/).length;
+      const duration = wordCount / wordsPerSecond;
+
+      lines.push({
+        text,
+        startTime: currentTime,
+        endTime: currentTime + duration,
+      });
+
+      currentTime += duration;
+    });
+
+    return lines;
   };
 
   const handleScriptGenerated = (script: string) => {
@@ -124,6 +158,13 @@ export default function Home() {
     // Set the hashtags
     setHashtags(extractedHashtags);
 
+    // Generate transcript lines with timing estimates
+    const estimatedLines = estimateLineTimings(cleanedScript);
+    setTranscriptLines(estimatedLines);
+
+    // Generate a unique job ID for this session
+    setCurrentJobId(generateId());
+
     // Check if the original post had an image
     if (lastImportedPostImage) {
       // Switch to image-to-video tab
@@ -135,18 +176,18 @@ export default function Home() {
         .then(blob => {
           const file = new File([blob], 'imported-image.jpg', { type: 'image/jpeg' });
           setSelectedImage(file);
-          addToast('success', 'Script with image imported to Image to Video!');
+          addToast('success', 'Script with image imported! Add images to your video.');
         })
         .catch(err => {
           console.error('Error loading image:', err);
-          addToast('success', 'Script imported to video editor!');
+          addToast('success', 'Script imported! Add images to your video.');
         });
 
       // Clear the stored image URL
       setLastImportedPostImage(null);
     } else {
       // No image, stay on text-to-video
-      addToast('success', 'Script imported to video editor!');
+      addToast('success', 'Script imported! Add images to your video.');
     }
 
     setScriptText('');
@@ -167,26 +208,56 @@ export default function Home() {
       return;
     }
 
+    // Step 1: Generate audio and get real transcript with Whisper
+    setError(undefined);
+    setLoading(true);
+    setLoadingStage('Generating audio and transcribing...');
+
+    try {
+      const transcriptData = await transcribeAudioWithTimestamps(text, selectedVoiceId);
+
+      console.log('Transcription complete:', transcriptData);
+
+      // Step 2: Show image generator with real transcript timings
+      setTranscriptLines(transcriptData.transcriptLines);
+      setCurrentJobId(transcriptData.jobId);
+      setLoading(false);
+      setShowImageGenerator(true);
+    } catch (error) {
+      console.error('Error during transcription:', error);
+      setError(error instanceof Error ? error.message : 'Failed to generate audio');
+      addToast('error', error instanceof Error ? error.message : 'Failed to generate audio');
+      setLoading(false);
+    }
+  };
+
+  const handleStartVideoGeneration = async (overlaysToUse?: ImageOverlay[]) => {
     setError(undefined);
     setLoading(true);
 
     try {
-      // Stage 1: Generate audio
-      setLoadingStage('Generating audio narration...');
+      // We already have audio and transcript from the transcribe step
+      // Just overlay everything now
+      setLoadingStage('Overlaying audio, captions, and images on video...');
       await new Promise(resolve => setTimeout(resolve, 500)); // Brief delay for UI update
-
-      // Stage 2: Transcribing
-      setTimeout(() => setLoadingStage('Transcribing audio...'), 5000);
-
-      // Stage 3: Overlaying audio and captions
-      setTimeout(() => setLoadingStage('Overlaying audio and captions on video...'), 10000);
 
       // Get background music filename if selected
       const backgroundMusicFilename = selectedMusicId !== 'none' ?
         BACKGROUND_MUSIC_TRACKS.find(m => m.id === selectedMusicId)?.filename : undefined;
 
-      // Call overlay API to add audio and captions to sample video
-      const video = await overlayAudioAndCaptions(text, selectedVoiceId, captionOptions, backgroundMusicFilename);
+      // Use passed overlays or fall back to state
+      const finalOverlays = overlaysToUse !== undefined ? overlaysToUse : imageOverlays;
+
+      console.log('[Page] Overlaying with jobId:', currentJobId);
+      console.log('[Page] Image overlays:', finalOverlays);
+
+      // Call overlay-existing API since we already have audio and transcript
+      const video = await overlayExistingAudio(
+        currentJobId,
+        captionOptions,
+        backgroundMusicFilename,
+        finalOverlays.length > 0 ? finalOverlays : undefined
+      );
 
       setGeneratedVideo(video);
       addToast('success', 'Video generated successfully!');
@@ -476,14 +547,52 @@ export default function Home() {
                           captionText={captionText}
                         />
 
-                        <Button
-                          onClick={handleGenerate}
-                          loading={loading}
-                          disabled={text.length < TEXT_LIMITS.min}
-                          className="w-full py-3 text-base font-semibold"
-                        >
-                          {loading ? (loadingStage || 'Generating Video...') : 'Generate Video'}
-                        </Button>
+                        {/* Image Overlays Info */}
+                        {imageOverlays.length > 0 && (
+                          <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg border border-green-200">
+                            <Sparkles className="w-5 h-5 text-green-600" />
+                            <span className="text-sm font-medium text-green-700">
+                              {imageOverlays.length} image{imageOverlays.length > 1 ? 's' : ''} ready to add to video
+                            </span>
+                            <button
+                              onClick={() => {
+                                const lines = estimateLineTimings(text);
+                                setTranscriptLines(lines);
+                                setCurrentJobId(generateId());
+                                setShowImageGenerator(true);
+                              }}
+                              className="ml-auto text-sm text-green-700 hover:text-green-800 underline"
+                            >
+                              Edit
+                            </button>
+                          </div>
+                        )}
+
+                        <div className="flex gap-3">
+                          {imageOverlays.length === 0 && text.length >= TEXT_LIMITS.min && (
+                            <button
+                              onClick={() => {
+                                const lines = estimateLineTimings(text);
+                                setTranscriptLines(lines);
+                                setCurrentJobId(generateId());
+                                setShowImageGenerator(true);
+                              }}
+                              className="flex items-center gap-2 px-4 py-3 text-sm font-semibold text-linkedin-blue border-2 border-linkedin-blue rounded-lg hover:bg-linkedin-blue/5 transition-colors"
+                            >
+                              <Sparkles className="w-4 h-4" />
+                              Add Images
+                            </button>
+                          )}
+
+                          <Button
+                            onClick={handleGenerate}
+                            loading={loading}
+                            disabled={text.length < TEXT_LIMITS.min}
+                            className="flex-1 py-3 text-base font-semibold"
+                          >
+                            {loading ? (loadingStage || 'Generating Video...') : 'Generate Video'}
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -588,14 +697,52 @@ export default function Home() {
                           captionText={captionText}
                         />
 
-                        <Button
-                          onClick={handleGenerate}
-                          loading={loading}
-                          disabled={text.length < TEXT_LIMITS.min}
-                          className="w-full py-3 text-base font-semibold"
-                        >
-                          {loading ? (loadingStage || 'Generating Video...') : 'Generate Video'}
-                        </Button>
+                        {/* Image Overlays Info */}
+                        {imageOverlays.length > 0 && (
+                          <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg border border-green-200">
+                            <Sparkles className="w-5 h-5 text-green-600" />
+                            <span className="text-sm font-medium text-green-700">
+                              {imageOverlays.length} image{imageOverlays.length > 1 ? 's' : ''} ready to add to video
+                            </span>
+                            <button
+                              onClick={() => {
+                                const lines = estimateLineTimings(text);
+                                setTranscriptLines(lines);
+                                setCurrentJobId(generateId());
+                                setShowImageGenerator(true);
+                              }}
+                              className="ml-auto text-sm text-green-700 hover:text-green-800 underline"
+                            >
+                              Edit
+                            </button>
+                          </div>
+                        )}
+
+                        <div className="flex gap-3">
+                          {imageOverlays.length === 0 && text.length >= TEXT_LIMITS.min && (
+                            <button
+                              onClick={() => {
+                                const lines = estimateLineTimings(text);
+                                setTranscriptLines(lines);
+                                setCurrentJobId(generateId());
+                                setShowImageGenerator(true);
+                              }}
+                              className="flex items-center gap-2 px-4 py-3 text-sm font-semibold text-linkedin-blue border-2 border-linkedin-blue rounded-lg hover:bg-linkedin-blue/5 transition-colors"
+                            >
+                              <Sparkles className="w-4 h-4" />
+                              Add Images
+                            </button>
+                          )}
+
+                          <Button
+                            onClick={handleGenerate}
+                            loading={loading}
+                            disabled={text.length < TEXT_LIMITS.min}
+                            className="flex-1 py-3 text-base font-semibold"
+                          >
+                            {loading ? (loadingStage || 'Generating Video...') : 'Generate Video'}
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -640,6 +787,29 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {showImageGenerator && (
+        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center animate-fade-in overflow-y-auto">
+          <div className="my-8">
+            <ImageGenerator
+              transcriptLines={transcriptLines}
+              jobId={currentJobId}
+              onImagesGenerated={(overlays) => {
+                setImageOverlays(overlays);
+                setShowImageGenerator(false);
+                addToast('success', `Generating video with ${overlays.length} image(s)...`);
+                handleStartVideoGeneration(overlays);
+              }}
+              onSkip={() => {
+                setImageOverlays([]);
+                setShowImageGenerator(false);
+                addToast('info', 'Generating video without images...');
+                handleStartVideoGeneration([]);
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {showCampaignWizard && generatedVideo && (
         <CampaignWizard

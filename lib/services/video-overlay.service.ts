@@ -5,6 +5,7 @@ import { CaptionOptions } from '@/types';
 import { generateAudioFromText } from './elevenlabs.service';
 import { transcribeAudio } from './whisper.service';
 import { buildSubtitleStyle } from './ffmpeg.service';
+import type { ImageOverlay } from '@/lib/types/image-overlay';
 
 export interface VideoOverlayResult {
   videoPath: string;
@@ -22,7 +23,8 @@ export async function overlayAudioAndCaptions(
   voiceId: string,
   captionOptions: CaptionOptions,
   jobId: string,
-  backgroundMusicPath?: string
+  backgroundMusicPath?: string,
+  imageOverlays?: ImageOverlay[]
 ): Promise<VideoOverlayResult> {
   console.log(`[Video Overlay] Starting audio and caption overlay for job ${jobId}`);
   console.log(`[Video Overlay] Input video: ${videoPath}`);
@@ -70,46 +72,95 @@ export async function overlayAudioAndCaptions(
         .input(videoPath)
         .input(audioPath);
 
+      // Track input indices for ffmpeg
+      let nextInputIndex = 2; // 0=video, 1=audio, 2=next
+
       // Add background music if provided
-      if (backgroundMusicPath && fs.existsSync(backgroundMusicPath)) {
+      const hasBackgroundMusic = backgroundMusicPath && fs.existsSync(backgroundMusicPath);
+      if (hasBackgroundMusic) {
         console.log(`[Video Overlay] Adding background music: ${backgroundMusicPath}`);
         command.input(backgroundMusicPath);
-
-        // Mix narration (100% volume) with background music (25% volume)
-        command
-          .complexFilter([
-            '[1:a]volume=1.0[narration]',        // Narration at full volume
-            '[2:a]volume=0.25[bgmusic]',         // Background music at 25% volume
-            '[narration][bgmusic]amix=inputs=2:duration=shortest[aout]', // Mix both
-            `[0:v]subtitles='${escapedSrtPath}':force_style='${subtitleStyle}'[v]`, // Apply subtitles
-          ])
-          .outputOptions([
-            '-map', '[v]',                       // Video with subtitles
-            '-map', '[aout]',                    // Mixed audio output
-            '-c:v', 'libx264',
-            '-preset', 'fast',
-            '-crf', '23',
-            '-c:a', 'aac',
-            '-b:a', '192k',
-            '-shortest',
-          ]);
-      } else {
-        // No background music - just narration with subtitles in complex filter
-        command
-          .complexFilter([
-            `[0:v]subtitles='${escapedSrtPath}':force_style='${subtitleStyle}'[v]`, // Apply subtitles
-          ])
-          .outputOptions([
-            '-map', '[v]',
-            '-map', '1:a',
-            '-c:v', 'libx264',
-            '-preset', 'fast',
-            '-crf', '23',
-            '-c:a', 'aac',
-            '-b:a', '192k',
-            '-shortest',
-          ]);
+        nextInputIndex++;
       }
+
+      // Add image overlays as inputs
+      const hasImageOverlays = imageOverlays && imageOverlays.length > 0;
+      if (hasImageOverlays) {
+        console.log(`[Video Overlay] Adding ${imageOverlays.length} image overlays`);
+        imageOverlays.forEach((overlay, index) => {
+          if (!fs.existsSync(overlay.imagePath)) {
+            console.warn(`[Video Overlay] Warning: Image not found: ${overlay.imagePath}`);
+          } else {
+            command.input(overlay.imagePath);
+            console.log(`[Video Overlay] Image ${index + 1}: ${overlay.imagePath} at ${overlay.timestamp}s`);
+          }
+        });
+      }
+
+      // Build complex filter chain
+      const filters: string[] = [];
+
+      // Audio mixing
+      if (hasBackgroundMusic) {
+        filters.push(
+          '[1:a]volume=1.0[narration]',        // Narration at full volume
+          '[2:a]volume=0.25[bgmusic]',         // Background music at 25% volume
+          '[narration][bgmusic]amix=inputs=2:duration=shortest[aout]' // Mix both
+        );
+      }
+
+      // Apply subtitles first
+      let currentVideoLabel = 'v1';
+      filters.push(`[0:v]subtitles='${escapedSrtPath}':force_style='${subtitleStyle}'[${currentVideoLabel}]`);
+
+      // Add image overlays
+      if (hasImageOverlays) {
+        imageOverlays.forEach((overlay, index) => {
+          if (fs.existsSync(overlay.imagePath)) {
+            const imageInputIndex = nextInputIndex + index;
+            const nextVideoLabel = index === imageOverlays.length - 1 ? 'v' : `v${index + 2}`;
+            const startTime = overlay.timestamp;
+            const endTime = overlay.timestamp + overlay.duration;
+
+            // Position: center of screen (both horizontally and vertically)
+            filters.push(
+              `[${currentVideoLabel}][${imageInputIndex}:v]overlay=x=(W-w)/2:y=(H-h)/2:enable='between(t,${startTime},${endTime})'[${nextVideoLabel}]`
+            );
+
+            currentVideoLabel = nextVideoLabel;
+          }
+        });
+      } else {
+        // No image overlays, rename final video output
+        filters.push(`[${currentVideoLabel}]null[v]`);
+      }
+
+      // Apply complex filter
+      command.complexFilter(filters);
+
+      // Output options
+      const outputOptions: string[] = [
+        '-map', '[v]',                       // Video with subtitles and overlays
+      ];
+
+      // Add audio mapping
+      if (hasBackgroundMusic) {
+        outputOptions.push('-map', '[aout]');  // Mixed audio output
+      } else {
+        outputOptions.push('-map', '1:a');     // Just narration
+      }
+
+      // Add codec and quality settings
+      outputOptions.push(
+        '-c:v', 'libx264',
+        '-preset', 'fast',
+        '-crf', '23',
+        '-c:a', 'aac',
+        '-b:a', '192k',
+        '-shortest'
+      );
+
+      command.outputOptions(outputOptions);
 
       command
         .output(outputPath)

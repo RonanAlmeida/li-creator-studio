@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { overlayAudioAndCaptions } from '@/lib/services/video-overlay.service';
 import { generateJobId } from '@/lib/services/pipeline.service';
 import { CaptionOptions } from '@/types';
+import type { ImageOverlay } from '@/lib/types/image-overlay';
 import path from 'path';
+import fs from 'fs';
 
 /**
  * POST /api/video/overlay
@@ -12,7 +14,7 @@ export async function POST(request: NextRequest) {
   try {
     // Parse request body
     const body = await request.json();
-    const { text, voiceId, captions, backgroundMusic } = body;
+    const { text, voiceId, captions, backgroundMusic, imageOverlays } = body;
 
     // Validate input
     if (!text || typeof text !== 'string') {
@@ -77,6 +79,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate image overlays if provided
+    let validatedImageOverlays: ImageOverlay[] | undefined;
+    if (imageOverlays && Array.isArray(imageOverlays)) {
+      validatedImageOverlays = [];
+      for (const overlay of imageOverlays) {
+        if (!overlay.imagePath || !fs.existsSync(overlay.imagePath)) {
+          console.warn(`[API] Image not found, skipping: ${overlay.imagePath}`);
+          continue;
+        }
+        validatedImageOverlays.push({
+          imagePath: overlay.imagePath,
+          timestamp: overlay.timestamp || 0,
+          duration: overlay.duration || 2,
+          x: overlay.x,
+          y: overlay.y,
+        });
+      }
+      console.log(`[API] Validated ${validatedImageOverlays.length} image overlays`);
+    }
+
     // Overlay audio and captions on sample video
     const result = await overlayAudioAndCaptions(
       sampleVideoPath,
@@ -84,7 +106,8 @@ export async function POST(request: NextRequest) {
       voiceId,
       captionOptions,
       jobId,
-      backgroundMusicPath
+      backgroundMusicPath,
+      validatedImageOverlays
     );
 
     console.log(`[API] Video overlay complete: ${jobId}`);
