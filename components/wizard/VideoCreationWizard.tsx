@@ -201,15 +201,16 @@ export default function VideoCreationWizard({
         throw new Error(overlayData.error || 'Video generation failed');
       }
 
+      // Use the video object returned by the API
       const videoResult: VideoResult = {
-        id: overlayData.jobId || wizardState.jobId,
-        url: `/generated-videos/final/${overlayData.jobId || wizardState.jobId}.mp4`,
-        thumbnail: '', // TODO: Generate thumbnail
-        duration: overlayData.duration || 0,
-        resolution: '1080x1920',
-        captionsIncluded: wizardState.captionOptions.enabled,
-        captionOptions: wizardState.captionOptions,
-        createdAt: new Date(),
+        id: overlayData.video.id,
+        url: overlayData.video.url,
+        thumbnail: overlayData.video.thumbnail || '',
+        duration: overlayData.video.duration,
+        resolution: overlayData.video.resolution,
+        captionsIncluded: overlayData.video.captionsIncluded,
+        captionOptions: overlayData.video.captionOptions,
+        createdAt: new Date(overlayData.video.createdAt),
       };
 
       updateState({

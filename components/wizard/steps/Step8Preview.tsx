@@ -61,11 +61,23 @@ export default function Step8Preview({
       </div>
 
       {/* Video Metadata */}
-      <div className="grid grid-cols-2 gap-4 bg-gray-50 rounded-lg p-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-gray-50 rounded-lg p-4">
         <div>
           <p className="text-xs text-gray-600 mb-1">Duration</p>
           <p className="text-sm font-semibold text-gray-900">
             {formatDuration(video.duration)}
+          </p>
+        </div>
+        <div>
+          <p className="text-xs text-gray-600 mb-1">Resolution</p>
+          <p className="text-sm font-semibold text-gray-900">
+            {video.resolution}
+          </p>
+        </div>
+        <div>
+          <p className="text-xs text-gray-600 mb-1">Captions</p>
+          <p className="text-sm font-semibold text-gray-900">
+            {video.captionsIncluded ? 'Included' : 'None'}
           </p>
         </div>
         <div>
