@@ -104,8 +104,8 @@ export async function overlayAudioAndCaptions(
       if (hasBackgroundMusic) {
         filters.push(
           '[1:a]volume=1.0[narration]',        // Narration at full volume
-          '[2:a]volume=0.25[bgmusic]',         // Background music at 25% volume
-          '[narration][bgmusic]amix=inputs=2:duration=shortest[aout]' // Mix both
+          '[2:a]volume=0.25[bgmusic]',         // Background music at 25% volume (20-30% range)
+          '[narration][bgmusic]amix=inputs=2:duration=longest:dropout_transition=2[aout]' // Mix both, use longest duration
         );
       }
 
@@ -122,9 +122,9 @@ export async function overlayAudioAndCaptions(
             const startTime = overlay.timestamp;
             const endTime = overlay.timestamp + overlay.duration;
 
-            // Position: center of screen (both horizontally and vertically)
+            // Position: center horizontally, slightly above center vertically
             filters.push(
-              `[${currentVideoLabel}][${imageInputIndex}:v]overlay=x=(W-w)/2:y=(H-h)/2:enable='between(t,${startTime},${endTime})'[${nextVideoLabel}]`
+              `[${currentVideoLabel}][${imageInputIndex}:v]overlay=x=(W-w)/2:y=(H-h)/2.5:enable='between(t,${startTime},${endTime})'[${nextVideoLabel}]`
             );
 
             currentVideoLabel = nextVideoLabel;
