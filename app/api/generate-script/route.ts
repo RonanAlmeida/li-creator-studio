@@ -10,7 +10,9 @@ export async function POST(request: NextRequest) {
     if (!apiKey) {
       console.error('OPEN_AI_API_KEY not found in environment variables');
       return NextResponse.json(
-        { error: 'OpenAI API key not configured in environment variables' },
+        {
+          error: 'Your API keys are not configured. Please add your OpenAI API key to the .env file.\n\nRequired: OPEN_AI_API_KEY for script generation.'
+        },
         { status: 500 }
       );
     }
