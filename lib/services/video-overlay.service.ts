@@ -104,8 +104,8 @@ export async function overlayAudioAndCaptions(
       if (hasBackgroundMusic) {
         filters.push(
           '[1:a]volume=1.0[narration]',        // Narration at full volume
-          '[2:a]volume=0.25[bgmusic]',         // Background music at 25% volume
-          '[narration][bgmusic]amix=inputs=2:duration=shortest[aout]' // Mix both
+          '[2:a]volume=0.25[bgmusic]',         // Background music at 25% volume (20-30% range)
+          '[narration][bgmusic]amix=inputs=2:duration=longest:dropout_transition=2[aout]' // Mix both, use longest duration
         );
       }
 

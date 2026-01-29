@@ -5,6 +5,7 @@ import { CaptionOptions, VideoResult } from '@/types';
 import type { ImageOverlay, TranscriptLine } from '@/lib/types/image-overlay';
 import { generateId } from '@/lib/utils';
 import { DEFAULT_VOICE } from '@/lib/constants/voices';
+import { BACKGROUND_MUSIC_TRACKS } from '@/lib/constants/background-music';
 import ProgressBar from './ProgressBar';
 import WizardNavigation from './WizardNavigation';
 import Step1ScriptInput from './steps/Step1ScriptInput';
@@ -175,6 +176,12 @@ export default function VideoCreationWizard({
     updateState({ isGenerating: true, loadingStage: 'Generating video...' });
 
     try {
+      // Convert music ID to filename
+      const selectedMusic = BACKGROUND_MUSIC_TRACKS.find(
+        (track) => track.id === wizardState.selectedMusicId
+      );
+      const backgroundMusicFilename = selectedMusic?.filename || '';
+
       // Call /api/video/overlay which does everything:
       // 1. Generate audio (ElevenLabs)
       // 2. Transcribe (Whisper)
@@ -186,7 +193,7 @@ export default function VideoCreationWizard({
           text: wizardState.scriptText,
           voiceId: wizardState.selectedVoiceId,
           captions: wizardState.captionOptions,
-          backgroundMusic: wizardState.selectedMusicId,
+          backgroundMusic: backgroundMusicFilename,
           imageOverlays: wizardState.imageOverlays,
         }),
       });

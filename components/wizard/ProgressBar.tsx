@@ -6,15 +6,15 @@ interface ProgressBarProps {
   onStepClick: (step: number) => void;
 }
 
-const STEP_LABELS = [
-  'Script',
-  'Hashtags',
-  'Voice',
-  'Music',
-  'Captions',
-  'Images',
-  'Review',
-  'Preview',
+const STEPS = [
+  { label: 'Script', icon: '📝' },
+  { label: 'Hashtags', icon: '#️⃣' },
+  { label: 'Voice', icon: '🎤' },
+  { label: 'Music', icon: '🎵' },
+  { label: 'Captions', icon: '💬' },
+  { label: 'Images', icon: '🖼️' },
+  { label: 'Review', icon: '👁️' },
+  { label: 'Preview', icon: '▶️' },
 ];
 
 export default function ProgressBar({
@@ -33,20 +33,20 @@ export default function ProgressBar({
   };
 
   return (
-    <div className="bg-white border-b border-gray-200 py-6 px-4">
+    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100 py-6 px-4">
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between relative">
           {/* Progress line */}
-          <div className="absolute top-5 left-0 right-0 h-0.5 bg-gray-200 -z-10">
+          <div className="absolute top-5 left-0 right-0 h-1 bg-blue-100 -z-10 rounded-full">
             <div
-              className="h-full bg-gradient-to-r from-[#0A66C2] to-[#004182] transition-all duration-500"
+              className="h-full bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 transition-all duration-500 rounded-full shadow-sm"
               style={{
-                width: `${((currentStep - 1) / (STEP_LABELS.length - 1)) * 100}%`,
+                width: `${((currentStep - 1) / (STEPS.length - 1)) * 100}%`,
               }}
             />
           </div>
 
-          {STEP_LABELS.map((label, index) => {
+          {STEPS.map((stepData, index) => {
             const step = index + 1;
             const status = getStepStatus(step);
             const clickable = canClickStep(step);
@@ -61,50 +61,38 @@ export default function ProgressBar({
                   onClick={() => clickable && onStepClick(step)}
                   disabled={!clickable}
                   className={`
-                    w-10 h-10 rounded-full flex items-center justify-center
-                    font-semibold text-sm transition-all duration-300
+                    w-11 h-11 rounded-full flex items-center justify-center
+                    font-semibold text-lg transition-all duration-300 transform
                     ${
                       status === 'completed'
-                        ? 'bg-gradient-to-r from-[#0A66C2] to-[#004182] text-white'
+                        ? 'bg-gradient-to-br from-blue-400 to-blue-600 text-white shadow-lg scale-100'
                         : status === 'active'
-                        ? 'bg-[#0A66C2] text-white animate-pulse'
-                        : 'bg-gray-200 text-gray-500'
+                        ? 'bg-gradient-to-br from-blue-500 to-blue-700 text-white shadow-xl scale-110 ring-4 ring-blue-200 animate-pulse'
+                        : 'bg-white text-gray-400 border-2 border-gray-200'
                     }
-                    ${clickable ? 'cursor-pointer hover:scale-110' : 'cursor-not-allowed'}
+                    ${clickable ? 'cursor-pointer hover:scale-110 hover:shadow-lg' : 'cursor-not-allowed'}
                   `}
                 >
                   {status === 'completed' ? (
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={3}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
+                    <span className="text-xl">✓</span>
                   ) : (
-                    step
+                    <span className="text-xl">{stepData.icon}</span>
                   )}
                 </button>
 
                 <span
                   className={`
-                    mt-2 text-xs font-medium hidden md:block
+                    mt-2 text-xs font-medium hidden md:block transition-colors duration-300
                     ${
                       status === 'active'
-                        ? 'text-[#0A66C2]'
+                        ? 'text-blue-700 font-semibold'
                         : status === 'completed'
-                        ? 'text-gray-700'
+                        ? 'text-blue-600'
                         : 'text-gray-400'
                     }
                   `}
                 >
-                  {label}
+                  {stepData.label}
                 </span>
               </div>
             );
