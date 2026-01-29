@@ -62,12 +62,8 @@ export async function POST(request: NextRequest) {
 
     const generatedScript = data.choices[0]?.message?.content || '';
 
-    // Extract just the script section from the response
-    const scriptMatch = generatedScript.match(/script:\s*(.+?)(?=\n\n|captions:|cta:|$)/is);
-    const scriptContent = scriptMatch ? scriptMatch[1].trim() : generatedScript;
-
     console.log('Sending script back to client');
-    return NextResponse.json({ script: scriptContent });
+    return NextResponse.json({ script: generatedScript });
   } catch (error) {
     console.error('Error in generate-script API:', error);
     return NextResponse.json(

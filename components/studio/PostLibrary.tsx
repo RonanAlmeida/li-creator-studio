@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { ThumbsUp, MessageSquare, ArrowRight } from 'lucide-react';
 
-interface Post {
+export interface Post {
   id: string;
   author: string;
   role: string;
@@ -101,7 +101,7 @@ const SAVED_POSTS: Post[] = [
 ];
 
 interface PostLibraryProps {
-  onImportPost: (content: string) => void;
+  onImportPost: (post: Post) => void;
 }
 
 export default function PostLibrary({ onImportPost }: PostLibraryProps) {
@@ -119,27 +119,33 @@ export default function PostLibrary({ onImportPost }: PostLibraryProps) {
         </div>
 
         {/* Section Toggle */}
-        <div className="px-2 py-2 border-b border-linkedin-gray-200">
-          <div className="flex gap-1">
+        <div className="px-4 border-b border-linkedin-gray-200">
+          <div className="flex gap-6">
             <button
               onClick={() => setSelectedSection('your')}
-              className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-colors ${
+              className={`relative px-1 py-3 text-xs font-semibold transition-colors ${
                 selectedSection === 'your'
-                  ? 'bg-linkedin-blue text-white'
-                  : 'text-linkedin-gray-600 hover:bg-linkedin-gray-100'
+                  ? 'text-linkedin-gray-900'
+                  : 'text-linkedin-gray-600 hover:text-linkedin-gray-900'
               }`}
             >
               Your Posts
+              {selectedSection === 'your' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-linkedin-blue rounded-full" />
+              )}
             </button>
             <button
               onClick={() => setSelectedSection('saved')}
-              className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-colors ${
+              className={`relative px-1 py-3 text-xs font-semibold transition-colors ${
                 selectedSection === 'saved'
-                  ? 'bg-linkedin-blue text-white'
-                  : 'text-linkedin-gray-600 hover:bg-linkedin-gray-100'
+                  ? 'text-linkedin-gray-900'
+                  : 'text-linkedin-gray-600 hover:text-linkedin-gray-900'
               }`}
             >
               Saved
+              {selectedSection === 'saved' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-linkedin-blue rounded-full" />
+              )}
             </button>
           </div>
         </div>
@@ -157,7 +163,7 @@ export default function PostLibrary({ onImportPost }: PostLibraryProps) {
 
 interface LinkedInPostProps {
   post: Post;
-  onImport: (content: string) => void;
+  onImport: (post: Post) => void;
 }
 
 function LinkedInPost({ post, onImport }: LinkedInPostProps) {
@@ -241,11 +247,11 @@ function LinkedInPost({ post, onImport }: LinkedInPostProps) {
       <button
         onClick={(e) => {
           e.stopPropagation();
-          onImport(post.content);
+          onImport(post);
         }}
         className="w-full flex items-center justify-center gap-1.5 py-2 bg-linkedin-blue hover:bg-linkedin-blue-dark text-white text-xs font-semibold rounded-lg transition-all duration-200"
       >
-        <span>Use Post</span>
+        <span>Send to Script Writer</span>
         <ArrowRight className="w-3.5 h-3.5" />
       </button>
       </div>

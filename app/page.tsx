@@ -14,7 +14,7 @@ import Button from '@/components/forms/Button';
 import VideoPreview from '@/components/studio/VideoPreview';
 import CampaignWizard from '@/components/studio/CampaignWizard';
 import { ToastContainer } from '@/components/ui/Toast';
-import { Video, Image, Type, Play, Sparkles, TrendingUp, BarChart3, Clock, FileText, ImagePlus, Clapperboard } from 'lucide-react';
+import { Video, Image, Type, Play, Sparkles, TrendingUp, BarChart3, Clock, FileText, ImagePlus, Clapperboard, Settings } from 'lucide-react';
 
 type GenerationType = 'text-to-video' | 'image-to-video' | 'video-to-video';
 
@@ -31,6 +31,10 @@ export default function Home() {
   const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
   const [scriptText, setScriptText] = useState<string>('');
   const [showScriptWriter, setShowScriptWriter] = useState(true);
+  const [importedPost, setImportedPost] = useState<any>(null);
+  const [captionText, setCaptionText] = useState<string>('');
+  const [hashtags, setHashtags] = useState<string>('');
+  const [showSettings, setShowSettings] = useState(false);
 
   const addToast = (type: 'success' | 'error' | 'info', message: string) => {
     const toast: ToastMessage = {
@@ -46,13 +50,64 @@ export default function Home() {
     setToasts(toasts.filter(t => t.id !== id));
   };
 
-  const handleImportPost = (content: string) => {
-    setScriptText(content);
+  const handleImportPost = (post: any) => {
+    setImportedPost(post);
+    setScriptText(''); // Clear any previous text
     addToast('success', 'Post sent to Script Writer!');
+
+    // Clear the imported post after a short delay to allow the ScriptEditor to process it
+    setTimeout(() => {
+      setImportedPost(null);
+    }, 500);
   };
 
   const handleScriptGenerated = (script: string) => {
-    setText(script);
+    console.log('Received script:', script);
+
+    // Parse the script to extract title, body, and hashtags
+    const lines = script.split('\n').map(line => line.trim()).filter(line => line !== '');
+    let title = '';
+    let cleanedScript = '';
+    let extractedHashtags = '';
+
+    // Extract title (first line if it exists)
+    if (lines.length > 0) {
+      title = lines[0];
+    }
+
+    // Find and extract ALL hashtags from the entire script using regex
+    const hashtagPattern = /#[\w]+/g;
+    const foundHashtags = script.match(hashtagPattern);
+    if (foundHashtags && foundHashtags.length > 0) {
+      extractedHashtags = foundHashtags.join(' ');
+      console.log('Found hashtags:', extractedHashtags);
+    }
+
+    // Clean up the script body (everything after title, excluding hashtag-only lines)
+    const scriptLines = [];
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i];
+      // Skip lines that are purely hashtags (start with # or only contain hashtags and spaces)
+      if (line.startsWith('#') || /^[#\s]+$/.test(line)) {
+        continue;
+      }
+      scriptLines.push(line);
+    }
+    cleanedScript = scriptLines.join('\n');
+
+    console.log('Parsed - Title:', title);
+    console.log('Parsed - Script:', cleanedScript);
+    console.log('Parsed - Hashtags:', extractedHashtags);
+
+    // Set the cleaned script
+    setText(cleanedScript);
+
+    // Set the title as caption
+    setCaptionText(title);
+
+    // Set the hashtags
+    setHashtags(extractedHashtags);
+
     setScriptText('');
     addToast('success', 'Script imported to video editor!');
   };
@@ -151,12 +206,18 @@ export default function Home() {
           <div className="col-span-5 space-y-4">
             {/* Post Creation Card */}
             <div id="video-content-area" className="bg-white rounded-xl shadow-linkedin p-5">
-              <div className="mb-4">
-                <h2 className="text-lg font-semibold text-linkedin-gray-900">Create Video Content</h2>
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-900">Create Video Content</h2>
+                <button
+                  onClick={() => setShowSettings(true)}
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-linkedin-gray-700 hover:text-linkedin-blue hover:bg-linkedin-gray-100 rounded-lg transition-colors"
+                >
+                  <Settings className="w-4 h-4" />
+                </button>
               </div>
 
               {/* Generation Type Tabs */}
-              <div className="flex gap-2 mb-5 p-1 bg-linkedin-gray-100 rounded-lg">
+              <div className="flex gap-6 mb-5 border-b border-linkedin-gray-200">
                 <TabButton
                   active={activeTab === 'text-to-video'}
                   onClick={() => setActiveTab('text-to-video')}
@@ -181,6 +242,23 @@ export default function Home() {
               <div className="space-y-4">
                 {activeTab === 'text-to-video' && (
                   <>
+                    {/* Caption Text Input - MOVED TO TOP */}
+                    <div>
+                      <label className="block text-sm font-semibold text-linkedin-gray-700 mb-2">
+                        Video title
+                      </label>
+                      <input
+                        type="text"
+                        value={captionText}
+                        onChange={(e) => setCaptionText(e.target.value)}
+                        placeholder="Enter your video caption (e.g., video title)"
+                        className="w-full px-4 py-2.5 text-sm border border-linkedin-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-linkedin-blue/40 focus:border-linkedin-blue bg-white shadow-sm transition-all"
+                      />
+                      <p className="mt-1 text-xs text-linkedin-gray-500">
+                      
+                      </p>
+                    </div>
+
                     <TextInput
                       value={text}
                       onChange={setText}
@@ -189,9 +267,27 @@ export default function Home() {
                       error={error}
                     />
 
+                    {/* Hashtags Input */}
+                    <div>
+                      <label className="block text-sm font-semibold text-linkedin-gray-700 mb-2">
+                        Hashtags
+                      </label>
+                      <input
+                        type="text"
+                        value={hashtags}
+                        onChange={(e) => setHashtags(e.target.value)}
+                        placeholder="Enter hashtags (e.g., #ProductManagement #AI #TechLeadership)"
+                        className="w-full px-4 py-2.5 text-sm border border-linkedin-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-linkedin-blue/40 focus:border-linkedin-blue bg-white shadow-sm transition-all"
+                      />
+                      <p className="mt-1 text-xs text-linkedin-gray-500">
+                        Separate hashtags with spaces
+                      </p>
+                    </div>
+
                     <CaptionCustomizer
                       options={captionOptions}
                       onChange={setCaptionOptions}
+                      captionText={captionText}
                     />
 
                     <Button
@@ -366,7 +462,11 @@ export default function Home() {
             </div>
             
             {showScriptWriter && (
-              <ScriptEditor onScriptGenerated={handleScriptGenerated} importedText={scriptText} />
+              <ScriptEditor
+                onScriptGenerated={handleScriptGenerated}
+                importedText={scriptText}
+                importedPost={importedPost}
+              />
             )}
           </div>
         </div>
@@ -380,6 +480,8 @@ export default function Home() {
           onSuccess={handleCampaignSuccess}
         />
       )}
+
+      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
 
       <ToastContainer toasts={toasts} onClose={removeToast} />
     </div>
@@ -397,14 +499,17 @@ function TabButton({ active, onClick, icon, label }: TabButtonProps) {
   return (
     <button
       onClick={onClick}
-      className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all duration-200 ${
+      className={`relative flex items-center gap-2 px-1 pb-3 text-sm font-semibold transition-colors ${
         active
-          ? 'bg-white text-linkedin-blue shadow-sm'
+          ? 'text-linkedin-gray-900'
           : 'text-linkedin-gray-600 hover:text-linkedin-gray-900'
       }`}
     >
       {icon}
-      <span className="hidden lg:inline">{label}</span>
+      <span>{label}</span>
+      {active && (
+        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-linkedin-blue rounded-full" />
+      )}
     </button>
   );
 }
@@ -423,6 +528,172 @@ function StatItem({ icon, label, value }: StatItemProps) {
         <span className="text-xs text-linkedin-gray-600">{label}</span>
       </div>
       <span className="text-xs font-semibold text-linkedin-gray-900">{value}</span>
+    </div>
+  );
+}
+
+interface SettingsModalProps {
+  onClose: () => void;
+}
+
+function SettingsModal({ onClose }: SettingsModalProps) {
+  const [apiKeys, setApiKeys] = useState({
+    textToVideo: '',
+    imageToVideo: '',
+    videoToVideo: '',
+    captions: '',
+    audio: '',
+    openai: '',
+    anthropic: '',
+  });
+
+  const handleSave = () => {
+    localStorage.setItem('creator-studio-api-keys', JSON.stringify(apiKeys));
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center animate-fade-in" onClick={onClose}>
+      <div
+        className="bg-white rounded-xl shadow-2xl w-full max-w-3xl mx-4 overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="bg-linkedin-blue px-6 py-5 border-b border-linkedin-gray-200">
+          <h2 className="text-2xl font-bold text-white">Settings</h2>
+          <p className="text-sm text-white/90 mt-1">Configure your API keys and environment variables</p>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 max-h-[70vh] overflow-y-auto">
+          <div className="space-y-6">
+            {/* Video Generation APIs */}
+            <div>
+              <h3 className="text-base font-bold text-linkedin-gray-900 mb-4 pb-2 border-b border-linkedin-gray-200">
+                Video Generation APIs
+              </h3>
+              <div className="space-y-4">
+                <ApiKeyInput
+                  label="Text to Video API Key"
+                  placeholder="sk-..."
+                  value={apiKeys.textToVideo}
+                  onChange={(val) => setApiKeys({ ...apiKeys, textToVideo: val })}
+                  description="API key for text-to-video generation service"
+                />
+                <ApiKeyInput
+                  label="Image to Video API Key"
+                  placeholder="sk-..."
+                  value={apiKeys.imageToVideo}
+                  onChange={(val) => setApiKeys({ ...apiKeys, imageToVideo: val })}
+                  description="API key for image-to-video conversion"
+                />
+                <ApiKeyInput
+                  label="Video to Video API Key"
+                  placeholder="sk-..."
+                  value={apiKeys.videoToVideo}
+                  onChange={(val) => setApiKeys({ ...apiKeys, videoToVideo: val })}
+                  description="API key for video transformation"
+                />
+              </div>
+            </div>
+
+            {/* Media Processing APIs */}
+            <div>
+              <h3 className="text-base font-bold text-linkedin-gray-900 mb-4 pb-2 border-b border-linkedin-gray-200">
+                Media Processing APIs
+              </h3>
+              <div className="space-y-4">
+                <ApiKeyInput
+                  label="Captions API Key"
+                  placeholder="sk-..."
+                  value={apiKeys.captions}
+                  onChange={(val) => setApiKeys({ ...apiKeys, captions: val })}
+                  description="API key for caption generation and styling"
+                />
+                <ApiKeyInput
+                  label="Audio API Key"
+                  placeholder="sk-..."
+                  value={apiKeys.audio}
+                  onChange={(val) => setApiKeys({ ...apiKeys, audio: val })}
+                  description="API key for audio processing and generation"
+                />
+              </div>
+            </div>
+
+            {/* AI Services */}
+            <div>
+              <h3 className="text-base font-bold text-linkedin-gray-900 mb-4 pb-2 border-b border-linkedin-gray-200">
+                AI Services
+              </h3>
+              <div className="space-y-4">
+                <ApiKeyInput
+                  label="OpenAI API Key"
+                  placeholder="sk-..."
+                  value={apiKeys.openai}
+                  onChange={(val) => setApiKeys({ ...apiKeys, openai: val })}
+                  description="For GPT-powered script generation"
+                />
+                <ApiKeyInput
+                  label="Anthropic API Key"
+                  placeholder="sk-ant-..."
+                  value={apiKeys.anthropic}
+                  onChange={(val) => setApiKeys({ ...apiKeys, anthropic: val })}
+                  description="For Claude-powered content assistance"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 bg-linkedin-gray-100 flex justify-between items-center">
+          <p className="text-xs text-linkedin-gray-600">
+            API keys are stored locally in your browser
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              className="px-5 py-2.5 text-sm font-semibold text-linkedin-gray-700 hover:bg-linkedin-gray-200 rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              className="linkedin-button-primary text-sm"
+            >
+              Save Settings
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface ApiKeyInputProps {
+  label: string;
+  placeholder: string;
+  value: string;
+  onChange: (value: string) => void;
+  description?: string;
+}
+
+function ApiKeyInput({ label, placeholder, value, onChange, description }: ApiKeyInputProps) {
+  return (
+    <div>
+      <label className="block text-sm font-semibold text-linkedin-gray-900 mb-1">
+        {label}
+      </label>
+      {description && (
+        <p className="text-xs text-linkedin-gray-600 mb-2">{description}</p>
+      )}
+      <input
+        type="password"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full px-4 py-2.5 border border-linkedin-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-linkedin-blue focus:border-transparent transition-all text-sm"
+      />
     </div>
   );
 }

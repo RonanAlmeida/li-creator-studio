@@ -7,6 +7,7 @@ import { Type, ChevronDown, ChevronUp, Palette, ChevronDown as ChevronDownIcon }
 interface CaptionCustomizerProps {
   options: CaptionOptions;
   onChange: (options: CaptionOptions) => void;
+  captionText?: string;
 }
 
 const PRESET_COLORS = [
@@ -36,9 +37,11 @@ const FONTS = [
 // Short sample caption for compact preview
 const SAMPLE_CAPTION = "Caption text";
 
-export default function CaptionCustomizer({ options, onChange }: CaptionCustomizerProps) {
+export default function CaptionCustomizer({ options, onChange, captionText }: CaptionCustomizerProps) {
   const [isExpanded, setIsExpanded] = useState(options.enabled);
   const [showFontDropdown, setShowFontDropdown] = useState(false);
+
+  const displayText = captionText && captionText.trim() !== '' ? captionText : SAMPLE_CAPTION;
 
   const updateOption = (key: keyof CaptionOptions, value: any) => {
     onChange({ ...options, [key]: value });
@@ -113,15 +116,15 @@ export default function CaptionCustomizer({ options, onChange }: CaptionCustomiz
             <div className="relative bg-slate-900 rounded-lg overflow-hidden h-16 flex items-center justify-center px-4">
               <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-slate-900" />
               <div className="relative z-10">
-                <div 
-                  className={`text-center ${getStyleClasses()}`}
-                  style={{ 
+                <div
+                  className={`text-center ${getStyleClasses()} max-w-full truncate px-2`}
+                  style={{
                     color: options.color,
                     fontFamily: selectedFont.value,
                     textShadow: options.color === '#FFFFFF' ? '0 1px 3px rgba(0,0,0,0.9)' : '0 1px 2px rgba(0,0,0,0.6)'
                   }}
                 >
-                  {SAMPLE_CAPTION}
+                  {displayText}
                 </div>
               </div>
             </div>
