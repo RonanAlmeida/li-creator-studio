@@ -5,6 +5,9 @@ import Header from "@/components/layout/Header";
 export const metadata: Metadata = {
   title: "Creator Studio | LinkedIn",
   description: "Transform your LinkedIn posts into engaging videos",
+  icons: {
+    icon: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({

@@ -30,11 +30,12 @@ export const FILE_LIMITS = {
 };
 
 export const CAPTION_DEFAULTS = {
-  enabled: false,
-  style: 'default' as const,
+  enabled: true,
+  style: 'bold' as const,
+  fontFamily: 'Inter, system-ui, sans-serif',
   position: 'bottom' as const,
   color: '#FFFFFF',
-  size: 16,
+  size: 24,
 };
 
 export const CAMPAIGN_OBJECTIVES = [

@@ -2,20 +2,24 @@ import { VideoResult, CaptionOptions, CampaignData } from '@/types';
 import { mockVideoResults, mockCampaignResponse } from './mockData';
 import { simulateDelay, generateId } from './utils';
 
-// Mock video generation functions
+// Video generation functions
 export async function generateTextToVideo(
   text: string,
   captions?: CaptionOptions
 ): Promise<VideoResult> {
-  // TODO: Replace with actual API
-  const result = {
-    ...mockVideoResults.textToVideo,
-    id: generateId(),
-    captionsIncluded: captions?.enabled || false,
-    captionOptions: captions,
-    createdAt: new Date(),
-  };
-  return simulateDelay(2000, result);
+  const response = await fetch('/api/video/text-to-video', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, captions }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to generate video');
+  }
+
+  const data = await response.json();
+  return data.video;
 }
 
 export async function generateImageToVideo(
@@ -23,15 +27,25 @@ export async function generateImageToVideo(
   image: File,
   captions?: CaptionOptions
 ): Promise<VideoResult> {
-  // TODO: Replace with actual API
-  const result = {
-    ...mockVideoResults.imageToVideo,
-    id: generateId(),
-    captionsIncluded: captions?.enabled || false,
-    captionOptions: captions,
-    createdAt: new Date(),
-  };
-  return simulateDelay(3000, result);
+  const formData = new FormData();
+  formData.append('text', text);
+  formData.append('image', image);
+  if (captions) {
+    formData.append('captions', JSON.stringify(captions));
+  }
+
+  const response = await fetch('/api/video/image-to-video', {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to generate video');
+  }
+
+  const data = await response.json();
+  return data.video;
 }
 
 export async function generateVideoCaptions(
@@ -47,6 +61,26 @@ export async function generateVideoCaptions(
     createdAt: new Date(),
   };
   return simulateDelay(4000, result);
+}
+
+export async function overlayAudioAndCaptions(
+  text: string,
+  voiceId: string,
+  captions?: CaptionOptions
+): Promise<VideoResult> {
+  const response = await fetch('/api/video/overlay', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, voiceId, captions }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to overlay audio and captions');
+  }
+
+  const data = await response.json();
+  return data.video;
 }
 
 export async function createLinkedInCampaign(

@@ -313,7 +313,7 @@ export default function ScriptEditor({ onScriptGenerated, importedText, imported
 
   return (
     <>
-      <div className="bg-white rounded-xl shadow-linkedin flex flex-col h-[600px] overflow-hidden border border-linkedin-gray-200">
+      <div className="bg-white rounded-xl shadow-linkedin flex flex-col h-[700px] overflow-hidden border border-linkedin-gray-200">
         {/* Header */}
         <div className="px-4 py-2.5 border-b border-linkedin-gray-200 bg-white">
           <div className="flex items-center justify-between">
@@ -668,10 +668,10 @@ export default function ScriptEditor({ onScriptGenerated, importedText, imported
                                           console.log('Edit option clicked:', option.id);
                                           handleEditOption(option.id);
                                         }}
-                                        className="w-full flex items-center gap-2 px-3 py-2 hover:bg-linkedin-gray-50 transition-colors text-left cursor-pointer"
+                                        className="group w-full flex items-center gap-2 px-3 py-2.5 hover:bg-linkedin-blue/10 transition-all duration-200 text-left cursor-pointer"
                                       >
-                                        <option.icon className="w-3.5 h-3.5 text-linkedin-gray-500" />
-                                        <span className="text-xs text-linkedin-gray-700">{option.label}</span>
+                                        <option.icon className="w-3.5 h-3.5 text-linkedin-gray-500 group-hover:text-linkedin-blue transition-colors" />
+                                        <span className="text-xs text-linkedin-gray-700 group-hover:text-linkedin-blue group-hover:font-semibold transition-all">{option.label}</span>
                                       </button>
                                     ))}
                                   </div>

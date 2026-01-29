@@ -19,8 +19,9 @@ const PRESET_COLORS = [
   { name: 'Purple', value: '#AF52DE', bg: 'bg-purple-500' },
   { name: 'Blue', value: '#0A84FF', bg: 'bg-blue-500' },
   { name: 'Cyan', value: '#5AC8FA', bg: 'bg-cyan-400' },
+  { name: 'Teal', value: '#30D5C8', bg: 'bg-teal-400' },
   { name: 'Green', value: '#34C759', bg: 'bg-green-500' },
-  { name: 'Black', value: '#000000', bg: 'bg-black' },
+  { name: 'Lime', value: '#A4E744', bg: 'bg-lime-400' },
 ];
 
 const FONTS = [
@@ -50,15 +51,15 @@ export default function CaptionCustomizer({ options, onChange, captionText }: Ca
   const getStyleClasses = () => {
     switch (options.style) {
       case 'bold':
-        return 'font-bold text-sm tracking-wide';
+        return 'font-bold text-3xl tracking-wide';
       case 'minimal':
-        return 'font-light text-xs tracking-normal';
+        return 'font-light text-2xl tracking-normal';
       default:
-        return 'font-semibold text-sm tracking-wide';
+        return 'font-semibold text-3xl tracking-wide';
     }
   };
 
-  const selectedFont = FONTS.find(f => f.value === options.style) || FONTS[0];
+  const selectedFont = FONTS.find(f => f.value === options.fontFamily) || FONTS[0];
 
   return (
     <div className="border border-linkedin-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
@@ -148,7 +149,7 @@ export default function CaptionCustomizer({ options, onChange, captionText }: Ca
                   <button
                     key={font.value}
                     onClick={() => {
-                      updateOption('style', font.value);
+                      updateOption('fontFamily', font.value);
                       setShowFontDropdown(false);
                     }}
                     className={`w-full text-left px-3 py-2 text-xs hover:bg-linkedin-gray-50 transition-colors ${
@@ -191,7 +192,7 @@ export default function CaptionCustomizer({ options, onChange, captionText }: Ca
               <Palette className="w-3 h-3" />
               Color
             </label>
-            <div className="flex gap-1.5 flex-wrap">
+            <div className="flex gap-1.5 flex-wrap items-center">
               {PRESET_COLORS.map((color) => (
                 <button
                   key={color.value}
@@ -213,6 +214,18 @@ export default function CaptionCustomizer({ options, onChange, captionText }: Ca
                   )}
                 </button>
               ))}
+              {/* Custom Color Picker with Rainbow Gradient - replaces black */}
+              <label className="relative w-7 h-7 rounded-md border-2 border-linkedin-gray-300 cursor-pointer hover:border-linkedin-gray-400 hover:scale-110 transition-all overflow-hidden shadow-sm" title="Custom Color">
+                <div className="absolute inset-0" style={{
+                  background: 'linear-gradient(135deg, #ff0000 0%, #ff7f00 16%, #ffff00 33%, #00ff00 50%, #0000ff 66%, #4b0082 83%, #9400d3 100%)'
+                }}></div>
+                <input
+                  type="color"
+                  value={options.color}
+                  onChange={(e) => updateOption('color', e.target.value)}
+                  className="opacity-0 w-full h-full cursor-pointer absolute inset-0"
+                />
+              </label>
             </div>
           </div>
         </div>

@@ -5,11 +5,13 @@ import { TabId, VideoResult, ToastMessage, CaptionOptions } from '@/types';
 import { generateId } from '@/lib/utils';
 import { CAPTION_DEFAULTS, TEXT_LIMITS } from '@/lib/constants';
 import { validateTextLength } from '@/lib/utils';
-import { generateTextToVideo } from '@/lib/api';
+import { generateTextToVideo, generateImageToVideo, overlayAudioAndCaptions } from '@/lib/api';
+import { DEFAULT_VOICE } from '@/lib/constants/voices';
 import PostLibrary from '@/components/studio/PostLibrary';
 import ScriptEditor from '@/components/studio/ScriptEditor';
 import TextInput from '@/components/forms/TextInput';
 import CaptionCustomizer from '@/components/forms/CaptionCustomizer';
+import VoiceSelector from '@/components/forms/VoiceSelector';
 import Button from '@/components/forms/Button';
 import VideoPreview from '@/components/studio/VideoPreview';
 import CampaignWizard from '@/components/studio/CampaignWizard';
@@ -23,6 +25,7 @@ export default function Home() {
   const [text, setText] = useState('');
   const [captionOptions, setCaptionOptions] = useState<CaptionOptions>(CAPTION_DEFAULTS);
   const [loading, setLoading] = useState(false);
+  const [loadingStage, setLoadingStage] = useState<string>('');
   const [error, setError] = useState<string>();
   const [generatedVideo, setGeneratedVideo] = useState<VideoResult | null>(null);
   const [showCampaignWizard, setShowCampaignWizard] = useState(false);
@@ -35,6 +38,8 @@ export default function Home() {
   const [captionText, setCaptionText] = useState<string>('');
   const [hashtags, setHashtags] = useState<string>('');
   const [showSettings, setShowSettings] = useState(false);
+  const [lastImportedPostImage, setLastImportedPostImage] = useState<string | null>(null);
+  const [selectedVoiceId, setSelectedVoiceId] = useState<string>(DEFAULT_VOICE.id);
 
   const addToast = (type: 'success' | 'error' | 'info', message: string) => {
     const toast: ToastMessage = {
@@ -53,6 +58,14 @@ export default function Home() {
   const handleImportPost = (post: any) => {
     setImportedPost(post);
     setScriptText(''); // Clear any previous text
+
+    // Store the image URL if the post has one
+    if (post.image) {
+      setLastImportedPostImage(post.image);
+    } else {
+      setLastImportedPostImage(null);
+    }
+
     addToast('success', 'Post sent to Script Writer!');
 
     // Clear the imported post after a short delay to allow the ScriptEditor to process it
@@ -108,8 +121,32 @@ export default function Home() {
     // Set the hashtags
     setHashtags(extractedHashtags);
 
+    // Check if the original post had an image
+    if (lastImportedPostImage) {
+      // Switch to image-to-video tab
+      setActiveTab('image-to-video');
+
+      // Load the image from the URL
+      fetch(lastImportedPostImage)
+        .then(res => res.blob())
+        .then(blob => {
+          const file = new File([blob], 'imported-image.jpg', { type: 'image/jpeg' });
+          setSelectedImage(file);
+          addToast('success', 'Script with image imported to Image to Video!');
+        })
+        .catch(err => {
+          console.error('Error loading image:', err);
+          addToast('success', 'Script imported to video editor!');
+        });
+
+      // Clear the stored image URL
+      setLastImportedPostImage(null);
+    } else {
+      // No image, stay on text-to-video
+      addToast('success', 'Script imported to video editor!');
+    }
+
     setScriptText('');
-    addToast('success', 'Script imported to video editor!');
   };
 
   const handleGenerate = async () => {
@@ -120,11 +157,30 @@ export default function Home() {
       return;
     }
 
+    // For image-to-video, validate that an image is selected
+    if (activeTab === 'image-to-video' && !selectedImage) {
+      setError('Please select an image');
+      addToast('error', 'Please select an image to generate video');
+      return;
+    }
+
     setError(undefined);
     setLoading(true);
 
     try {
-      const video = await generateTextToVideo(text, captionOptions);
+      // Stage 1: Generate audio
+      setLoadingStage('Generating audio narration...');
+      await new Promise(resolve => setTimeout(resolve, 500)); // Brief delay for UI update
+
+      // Stage 2: Transcribing
+      setTimeout(() => setLoadingStage('Transcribing audio...'), 5000);
+
+      // Stage 3: Overlaying audio and captions
+      setTimeout(() => setLoadingStage('Overlaying audio and captions on video...'), 10000);
+
+      // Call overlay API to add audio and captions to sample video
+      const video = await overlayAudioAndCaptions(text, selectedVoiceId, captionOptions);
+
       setGeneratedVideo(video);
       addToast('success', 'Video generated successfully!');
 
@@ -132,11 +188,12 @@ export default function Home() {
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
       }, 100);
     } catch (err) {
-      const errorMsg = 'Failed to generate video. Please try again.';
+      const errorMsg = err instanceof Error ? err.message : 'Failed to generate video. Please try again.';
       setError(errorMsg);
       addToast('error', errorMsg);
     } finally {
       setLoading(false);
+      setLoadingStage('');
     }
   };
 
@@ -267,6 +324,12 @@ export default function Home() {
                       error={error}
                     />
 
+                    {/* Voice Selector */}
+                    <VoiceSelector
+                      selectedVoiceId={selectedVoiceId}
+                      onVoiceChange={setSelectedVoiceId}
+                    />
+
                     {/* Hashtags Input */}
                     <div>
                       <label className="block text-sm font-semibold text-linkedin-gray-700 mb-2">
@@ -296,7 +359,7 @@ export default function Home() {
                       disabled={text.length < TEXT_LIMITS.min}
                       className="w-full py-3 text-base font-semibold"
                     >
-                      {loading ? 'Generating Video...' : 'Generate Video'}
+                      {loading ? (loadingStage || 'Generating Video...') : 'Generate Video'}
                     </Button>
                   </>
                 )}
@@ -342,25 +405,59 @@ export default function Home() {
                           </button>
                         </div>
 
+                        {/* Video Title */}
+                        <div>
+                          <label className="block text-sm font-semibold text-linkedin-gray-700 mb-2">
+                            Video title
+                          </label>
+                          <input
+                            type="text"
+                            value={captionText}
+                            onChange={(e) => setCaptionText(e.target.value)}
+                            placeholder="Enter your video caption (e.g., video title)"
+                            className="w-full px-4 py-2.5 text-sm border border-linkedin-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-linkedin-blue/40 focus:border-linkedin-blue bg-white shadow-sm transition-all"
+                          />
+                        </div>
+
+                        {/* Video Script */}
                         <TextInput
                           value={text}
                           onChange={setText}
-                          placeholder="Describe the video transformation you want..."
-                          rows={4}
+                          placeholder="Describe what you want your video to convey... Your story, insight, or idea that connects with your professional audience"
+                          rows={12}
                           error={error}
                         />
+
+                        {/* Hashtags */}
+                        <div>
+                          <label className="block text-sm font-semibold text-linkedin-gray-700 mb-2">
+                            Hashtags
+                          </label>
+                          <input
+                            type="text"
+                            value={hashtags}
+                            onChange={(e) => setHashtags(e.target.value)}
+                            placeholder="Enter hashtags (e.g., #ProductManagement #AI #TechLeadership)"
+                            className="w-full px-4 py-2.5 text-sm border border-linkedin-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-linkedin-blue/40 focus:border-linkedin-blue bg-white shadow-sm transition-all"
+                          />
+                          <p className="mt-1 text-xs text-linkedin-gray-500">
+                            Separate hashtags with spaces
+                          </p>
+                        </div>
 
                         <CaptionCustomizer
                           options={captionOptions}
                           onChange={setCaptionOptions}
+                          captionText={captionText}
                         />
 
                         <Button
                           onClick={handleGenerate}
                           loading={loading}
+                          disabled={text.length < TEXT_LIMITS.min}
                           className="w-full py-3 text-base font-semibold"
                         >
-                          {loading ? 'Generating Video...' : 'Generate Video from Image'}
+                          {loading ? (loadingStage || 'Generating Video...') : 'Generate Video'}
                         </Button>
                       </div>
                     )}
@@ -408,25 +505,59 @@ export default function Home() {
                           </button>
                         </div>
 
+                        {/* Video Title */}
+                        <div>
+                          <label className="block text-sm font-semibold text-linkedin-gray-700 mb-2">
+                            Video title
+                          </label>
+                          <input
+                            type="text"
+                            value={captionText}
+                            onChange={(e) => setCaptionText(e.target.value)}
+                            placeholder="Enter your video caption (e.g., video title)"
+                            className="w-full px-4 py-2.5 text-sm border border-linkedin-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-linkedin-blue/40 focus:border-linkedin-blue bg-white shadow-sm transition-all"
+                          />
+                        </div>
+
+                        {/* Video Script */}
                         <TextInput
                           value={text}
                           onChange={setText}
-                          placeholder="Describe how you want to transform this video..."
-                          rows={4}
+                          placeholder="Describe what you want your video to convey... Your story, insight, or idea that connects with your professional audience"
+                          rows={12}
                           error={error}
                         />
+
+                        {/* Hashtags */}
+                        <div>
+                          <label className="block text-sm font-semibold text-linkedin-gray-700 mb-2">
+                            Hashtags
+                          </label>
+                          <input
+                            type="text"
+                            value={hashtags}
+                            onChange={(e) => setHashtags(e.target.value)}
+                            placeholder="Enter hashtags (e.g., #ProductManagement #AI #TechLeadership)"
+                            className="w-full px-4 py-2.5 text-sm border border-linkedin-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-linkedin-blue/40 focus:border-linkedin-blue bg-white shadow-sm transition-all"
+                          />
+                          <p className="mt-1 text-xs text-linkedin-gray-500">
+                            Separate hashtags with spaces
+                          </p>
+                        </div>
 
                         <CaptionCustomizer
                           options={captionOptions}
                           onChange={setCaptionOptions}
+                          captionText={captionText}
                         />
 
                         <Button
                           onClick={handleGenerate}
                           loading={loading}
+                          disabled={text.length < TEXT_LIMITS.min}
                           className="w-full py-3 text-base font-semibold"
                         >
-                          {loading ? 'Generating Video...' : 'Generate Enhanced Video'}
+                          {loading ? (loadingStage || 'Generating Video...') : 'Generate Video'}
                         </Button>
                       </div>
                     )}

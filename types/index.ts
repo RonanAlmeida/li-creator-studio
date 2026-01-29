@@ -14,6 +14,7 @@ export interface VideoResult {
 export interface CaptionOptions {
   enabled: boolean;
   style: 'default' | 'bold' | 'minimal';
+  fontFamily: string;
   position: 'bottom' | 'center' | 'top';
   color: string;
   size: number;

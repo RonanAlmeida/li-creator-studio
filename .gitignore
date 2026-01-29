@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# generated videos (keep folder structure but ignore content)
+public/generated-videos/**
+!public/generated-videos/.gitkeep
