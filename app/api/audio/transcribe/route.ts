@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     // Step 2: Transcribe with Whisper
     console.log('[API] Transcribing audio...');
-    const { srtPath, transcript } = await transcribeAudio(audioPath, jobId);
+    const { srtPath } = await transcribeAudio(audioPath, jobId);
 
     // Parse SRT to get transcript lines with timestamps
     const srtContent = fs.readFileSync(srtPath, 'utf-8');

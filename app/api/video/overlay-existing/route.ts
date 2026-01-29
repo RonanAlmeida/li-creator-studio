@@ -5,6 +5,7 @@ import ffmpeg from 'fluent-ffmpeg';
 import { CaptionOptions } from '@/types';
 import type { ImageOverlay } from '@/lib/types/image-overlay';
 import { buildSubtitleStyle } from '@/lib/services/ffmpeg.service';
+import { addVideoToLibrary } from '@/lib/services/video-library.service';
 
 /**
  * POST /api/video/overlay-existing
@@ -183,13 +184,34 @@ export async function POST(request: NextRequest) {
     const audioStats = fs.statSync(audioPath);
     const duration = 30; // Approximate
 
+    // Read transcript from SRT file
+    let transcriptText = '';
+    if (fs.existsSync(srtPath)) {
+      const srtContent = fs.readFileSync(srtPath, 'utf-8');
+      // Extract just the text from SRT (skip timestamps and line numbers)
+      transcriptText = srtContent
+        .split('\n\n')
+        .map(block => {
+          const lines = block.split('\n');
+          return lines.slice(2).join(' '); // Skip line number and timestamp
+        })
+        .join(' ')
+        .trim();
+    }
+
+    // Extract title from first line of transcript (up to 50 chars)
+    const title = transcriptText.split('\n')[0]?.slice(0, 50) || 'Untitled Video';
+
+    // Add video to public library
+    await addVideoToLibrary(jobId, title, transcriptText, duration);
+
     const video = {
       id: jobId,
       url: `/generated-videos/final/${jobId}.mp4`,
       thumbnail: `/generated-videos/videos/sample_falai_output.mp4`,
       duration,
       resolution: '606x1080',
-      transcript: '',
+      transcript: transcriptText,
       captionsIncluded: true,
       captionOptions,
       createdAt: new Date().toISOString(),

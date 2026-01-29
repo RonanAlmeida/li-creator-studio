@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { TabId, VideoResult, ToastMessage, CaptionOptions } from '@/types';
 import { generateId } from '@/lib/utils';
 import { CAPTION_DEFAULTS, TEXT_LIMITS } from '@/lib/constants';
@@ -318,10 +319,16 @@ export default function Home() {
                 <p className="text-xs text-linkedin-gray-600 mt-0.5">Senior Product Manager at GSOBA</p>
               </div>
               <div className="border-t border-linkedin-gray-200 px-4 py-3">
-                <div className="flex justify-between items-center text-xs">
+                <div className="flex justify-between items-center text-xs mb-2">
                   <span className="text-linkedin-gray-600">Posts</span>
                   <span className="font-semibold text-linkedin-gray-900">127</span>
                 </div>
+                <Link
+                  href="/videos"
+                  className="block w-full py-2 text-center text-xs font-semibold text-linkedin-blue hover:bg-linkedin-blue/10 rounded transition-colors"
+                >
+                  View Video Library
+                </Link>
               </div>
             </div>
 
