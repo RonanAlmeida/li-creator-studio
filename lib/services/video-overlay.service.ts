@@ -122,9 +122,9 @@ export async function overlayAudioAndCaptions(
             const startTime = overlay.timestamp;
             const endTime = overlay.timestamp + overlay.duration;
 
-            // Position: center of screen (both horizontally and vertically)
+            // Position: center horizontally, slightly above center vertically
             filters.push(
-              `[${currentVideoLabel}][${imageInputIndex}:v]overlay=x=(W-w)/2:y=(H-h)/2:enable='between(t,${startTime},${endTime})'[${nextVideoLabel}]`
+              `[${currentVideoLabel}][${imageInputIndex}:v]overlay=x=(W-w)/2:y=(H-h)/2.5:enable='between(t,${startTime},${endTime})'[${nextVideoLabel}]`
             );
 
             currentVideoLabel = nextVideoLabel;
