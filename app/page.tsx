@@ -335,14 +335,14 @@ export default function Home() {
 
             <PostLibrary onImportPost={handleImportPost} />
 
-            <div className="bg-white rounded-xl shadow-linkedin p-4">
+            {/* <div className="bg-white rounded-xl shadow-linkedin p-4">
               <h4 className="text-sm font-semibold text-linkedin-gray-900 mb-3">Quick Stats</h4>
               <div className="space-y-3">
                 <StatItem icon={<TrendingUp className="w-4 h-4" />} label="Engagement" value="+12.5%" />
                 <StatItem icon={<BarChart3 className="w-4 h-4" />} label="Reach" value="45.2K" />
                 <StatItem icon={<Clock className="w-4 h-4" />} label="Avg. Watch" value="2:34" />
               </div>
-            </div>
+            </div> */}
           </div>
 
           {/* Center Feed - Main Content */}

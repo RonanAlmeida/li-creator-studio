@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'API configuration error. Please check your environment variables.',
+          error: 'Your API keys are not configured. Please add the required API keys to your .env file.\n\nRequired:\n- ELEVENLABS_API_KEY (voice generation)\n- OPEN_AI_API_KEY (transcription)',
         },
         { status: 500 }
       );
