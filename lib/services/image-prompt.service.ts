@@ -1,8 +1,19 @@
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPEN_AI_API_KEY,
-});
+// Lazy initialize OpenAI client to avoid build-time errors
+let openai: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI {
+  if (!openai) {
+    if (!process.env.OPEN_AI_API_KEY) {
+      throw new Error('OPEN_AI_API_KEY is not configured in environment variables');
+    }
+    openai = new OpenAI({
+      apiKey: process.env.OPEN_AI_API_KEY,
+    });
+  }
+  return openai;
+}
 
 export async function generateImagePrompts(transcriptLines: Array<{ text: string; startTime: number; endTime: number }>): Promise<string[]> {
   try {
@@ -25,7 +36,8 @@ Rules:
 
 Respond with ONLY the image prompts, one per line, numbered 1-${transcriptLines.length}.`;
 
-    const response = await openai.chat.completions.create({
+    const client = getOpenAIClient();
+    const response = await client.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
         {

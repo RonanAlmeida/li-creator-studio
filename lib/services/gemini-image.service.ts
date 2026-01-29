@@ -3,18 +3,26 @@ import path from 'path';
 import sharp from 'sharp';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPEN_AI_API_KEY,
-});
+// Lazy initialize OpenAI client to avoid build-time errors
+let openai: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI {
+  if (!openai) {
+    if (!process.env.OPEN_AI_API_KEY) {
+      throw new Error('OPEN_AI_API_KEY is not configured in environment variables');
+    }
+    openai = new OpenAI({
+      apiKey: process.env.OPEN_AI_API_KEY,
+    });
+  }
+  return openai;
+}
 
 export async function generateImageFromPrompt(
   prompt: string,
   jobId: string,
   imageIndex: number
 ): Promise<{ imagePath: string; imageUrl: string }> {
-  if (!process.env.OPEN_AI_API_KEY) {
-    throw new Error('OPEN_AI_API_KEY is not configured in environment variables');
-  }
 
   // Create directory for images if it doesn't exist
   const imageDir = path.join(
@@ -33,7 +41,8 @@ export async function generateImageFromPrompt(
     console.log('[Image Gen] Calling DALL-E 3 with prompt:', prompt);
 
     // Call DALL-E 3 API with base64 response to avoid download issues
-    const response = await openai.images.generate({
+    const client = getOpenAIClient();
+    const response = await client.images.generate({
       model: 'dall-e-3',
       prompt: `Simple, clean, minimalist icon: ${prompt}. Icon style, no text, plain background.`,
       n: 1,
