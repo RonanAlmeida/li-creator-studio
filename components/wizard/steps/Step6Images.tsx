@@ -1,23 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-
-interface TranscriptLine {
-  text: string;
-  start: number;
-  end: number;
-}
-
-interface ImageOverlay {
-  prompt: string;
-  imageUrl: string;
-  timestamp: number;
-  duration: number;
-}
+import { ImageGenerator } from '@/components/studio/ImageGenerator';
+import type { TranscriptLine, ImageOverlay } from '@/lib/types/image-overlay';
 
 interface Step6ImagesProps {
   transcriptLines: TranscriptLine[];
-  jobId: string; // This is the audio job ID, not video
+  jobId: string;
+  scriptText: string; // Need this to estimate timings
   imageOverlays: ImageOverlay[];
   onComplete: (overlays: ImageOverlay[]) => void;
   onSkip: () => void;
@@ -26,33 +16,72 @@ interface Step6ImagesProps {
 export default function Step6Images({
   transcriptLines,
   jobId,
+  scriptText,
   imageOverlays,
   onComplete,
   onSkip,
 }: Step6ImagesProps) {
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedOverlays, setGeneratedOverlays] = useState<ImageOverlay[]>(imageOverlays);
+  const [showGenerator, setShowGenerator] = useState(false);
+  const [estimatedLines, setEstimatedLines] = useState<TranscriptLine[]>([]);
 
-  const handleAddImages = async () => {
-    setIsGenerating(true);
+  const estimateLineTimings = (script: string): TranscriptLine[] => {
+    // Split script into sentences
+    const sentences = script.split(/[.!?]+/).filter(s => s.trim().length > 0);
 
-    try {
-      // This would normally open the ImageGenerator modal
-      // For now, we'll simulate the process
-      // In the actual implementation, this would integrate with the existing ImageGenerator component
+    // Estimate ~150 words per minute speaking rate = 2.5 words per second
+    const wordsPerSecond = 2.5;
+    let currentTime = 0;
+    const lines: TranscriptLine[] = [];
 
-      // Placeholder: simulate image generation
-      await new Promise(resolve => setTimeout(resolve, 2000));
+    sentences.forEach((sentence) => {
+      const text = sentence.trim();
+      if (text.length === 0) return;
 
-      // For now, just complete with existing overlays
-      onComplete(generatedOverlays);
-    } catch (error) {
-      console.error('Error generating images:', error);
-      alert('Failed to generate images. Please try again.');
-    } finally {
-      setIsGenerating(false);
-    }
+      const wordCount = text.split(/\s+/).length;
+      const duration = wordCount / wordsPerSecond;
+
+      lines.push({
+        text,
+        startTime: currentTime,
+        endTime: currentTime + duration,
+      });
+
+      currentTime += duration;
+    });
+
+    return lines;
   };
+
+  const handleStartGeneration = () => {
+    // Estimate line timings from script
+    const lines = estimateLineTimings(scriptText);
+    setEstimatedLines(lines);
+    setShowGenerator(true);
+  };
+
+  const handleImagesGenerated = (overlays: ImageOverlay[]) => {
+    onComplete(overlays);
+  };
+
+  if (showGenerator && estimatedLines.length > 0) {
+    return (
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Generate Images</h2>
+          <p className="text-gray-600">
+            Customize prompts and timing for each image overlay
+          </p>
+        </div>
+
+        <ImageGenerator
+          transcriptLines={estimatedLines}
+          jobId={jobId}
+          onImagesGenerated={handleImagesGenerated}
+          onSkip={onSkip}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -91,54 +120,27 @@ export default function Step6Images({
             </p>
           </div>
 
-          {generatedOverlays.length > 0 && (
+          {imageOverlays.length > 0 && (
             <div className="w-full max-w-md bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm font-medium text-gray-900">
-                {generatedOverlays.length} image{generatedOverlays.length !== 1 ? 's' : ''} ready
+                {imageOverlays.length} image{imageOverlays.length !== 1 ? 's' : ''} ready
               </p>
             </div>
           )}
 
           <div className="flex gap-3">
             <button
-              onClick={handleAddImages}
-              disabled={isGenerating}
-              className={`
-                px-6 py-3 rounded-lg font-medium transition-all
-                ${
-                  isGenerating
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-[#0A66C2] to-[#004182] text-white hover:shadow-lg active:scale-95'
-                }
-              `}
+              onClick={handleStartGeneration}
+              className="px-6 py-3 rounded-lg font-medium bg-gradient-to-r from-[#0A66C2] to-[#004182] text-white hover:shadow-lg active:scale-95 transition-all"
             >
-              {isGenerating ? (
-                <span className="flex items-center gap-2">
-                  <svg
-                    className="animate-spin h-5 w-5"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
-                  Generating...
-                </span>
-              ) : (
-                'Add Images'
-              )}
+              Add Images
+            </button>
+
+            <button
+              onClick={onSkip}
+              className="px-6 py-3 rounded-lg font-medium bg-gray-200 text-gray-700 hover:bg-gray-300 active:scale-95 transition-all"
+            >
+              Skip
             </button>
           </div>
         </div>
@@ -161,8 +163,8 @@ export default function Step6Images({
             <h3 className="font-medium text-gray-900 mb-1">Image Tips</h3>
             <ul className="text-sm text-gray-700 space-y-1">
               <li>• Images are generated based on your script content</li>
-              <li>• You can skip this step if you prefer a video without images</li>
-              <li>• Images will be automatically positioned for best visual impact</li>
+              <li>• You can customize prompts and timing for each image</li>
+              <li>• Skip this step if you prefer a video without images</li>
             </ul>
           </div>
         </div>

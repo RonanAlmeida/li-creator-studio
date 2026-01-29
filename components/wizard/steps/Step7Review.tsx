@@ -1,19 +1,7 @@
 'use client';
 
 import { CaptionOptions, VideoResult } from '@/types';
-
-interface ImageOverlay {
-  prompt: string;
-  imageUrl: string;
-  timestamp: number;
-  duration: number;
-}
-
-interface TranscriptLine {
-  text: string;
-  start: number;
-  end: number;
-}
+import type { ImageOverlay, TranscriptLine } from '@/lib/types/image-overlay';
 
 interface WizardState {
   currentStep: number;

@@ -384,6 +384,9 @@ export default function Home() {
               {/* Content Area - Multi-Step Wizard */}
               <VideoCreationWizard
                 generationType={activeTab}
+                initialScript={text}
+                initialCaption={captionText}
+                initialHashtags={hashtags}
                 onComplete={(video) => {
                   setGeneratedVideo(video);
                   addToast('success', 'Video generated successfully!');

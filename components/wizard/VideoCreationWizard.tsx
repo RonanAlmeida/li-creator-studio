@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CaptionOptions, VideoResult } from '@/types';
+import type { ImageOverlay, TranscriptLine } from '@/lib/types/image-overlay';
 import ProgressBar from './ProgressBar';
 import WizardNavigation from './WizardNavigation';
 import Step1ScriptInput from './steps/Step1ScriptInput';
@@ -12,19 +13,6 @@ import Step5Captions from './steps/Step5Captions';
 import Step6Images from './steps/Step6Images';
 import Step7Review from './steps/Step7Review';
 import Step8Preview from './steps/Step8Preview';
-
-interface ImageOverlay {
-  prompt: string;
-  imageUrl: string;
-  timestamp: number;
-  duration: number;
-}
-
-interface TranscriptLine {
-  text: string;
-  start: number;
-  end: number;
-}
 
 interface WizardState {
   currentStep: number;
@@ -61,20 +49,26 @@ interface WizardState {
 interface VideoCreationWizardProps {
   generationType: 'text-to-video' | 'image-to-video' | 'video-to-video';
   onComplete: (video: VideoResult) => void;
+  initialScript?: string;
+  initialCaption?: string;
+  initialHashtags?: string;
 }
 
 export default function VideoCreationWizard({
   generationType,
   onComplete,
+  initialScript = '',
+  initialCaption = '',
+  initialHashtags = '',
 }: VideoCreationWizardProps) {
   const [wizardState, setWizardState] = useState<WizardState>({
     currentStep: 1,
     completedSteps: new Set(),
     generationType,
-    scriptText: '',
-    captionText: '',
+    scriptText: initialScript,
+    captionText: initialCaption,
     uploadedFile: null,
-    hashtags: '',
+    hashtags: initialHashtags,
     selectedVoiceId: 'alloy',
     selectedMusicId: 'none',
     captionOptions: {
@@ -91,6 +85,17 @@ export default function VideoCreationWizard({
     loadingStage: '',
     generatedVideo: null,
   });
+
+  // Update wizard state when external props change (from AI Script Writer)
+  useEffect(() => {
+    if (initialScript || initialCaption || initialHashtags) {
+      updateState({
+        scriptText: initialScript,
+        captionText: initialCaption,
+        hashtags: initialHashtags,
+      });
+    }
+  }, [initialScript, initialCaption, initialHashtags]);
 
   const updateState = (updates: Partial<WizardState>) => {
     setWizardState((prev) => ({ ...prev, ...updates }));
@@ -172,46 +177,52 @@ export default function VideoCreationWizard({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text: wizardState.scriptText,
-          voice: wizardState.selectedVoiceId,
-          music: wizardState.selectedMusicId,
+          voiceId: wizardState.selectedVoiceId,
         }),
       });
 
-      if (!transcribeResponse.ok) throw new Error('Transcription failed');
+      if (!transcribeResponse.ok) {
+        const errorData = await transcribeResponse.json();
+        throw new Error(errorData.error || 'Transcription failed');
+      }
       const transcribeData = await transcribeResponse.json();
 
-      updateState({
-        loadingStage: 'Processing transcript...',
-        transcriptLines: transcribeData.transcript || [],
-      });
-
-      // Step 2: If images added, overlay them
-      let finalVideoUrl = transcribeData.audioUrl;
-
-      if (wizardState.imageOverlays.length > 0) {
-        updateState({ loadingStage: 'Adding images...' });
-
-        const overlayResponse = await fetch('/api/video/overlay-existing', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            audioUrl: transcribeData.audioUrl,
-            overlays: wizardState.imageOverlays,
-            captionOptions: wizardState.captionOptions,
-            captionText: wizardState.captionText,
-          }),
-        });
-
-        if (!overlayResponse.ok) throw new Error('Overlay failed');
-        const overlayData = await overlayResponse.json();
-        finalVideoUrl = overlayData.videoUrl;
+      if (!transcribeData.success) {
+        throw new Error(transcribeData.error || 'Transcription failed');
       }
 
-      updateState({ loadingStage: 'Creating video...' });
+      updateState({
+        loadingStage: 'Creating video...',
+        transcriptLines: transcribeData.transcriptLines || [],
+      });
+
+      // Step 2: Create video with overlays and captions
+      const overlayResponse = await fetch('/api/video/overlay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          audioPath: transcribeData.audioPath,
+          srtPath: transcribeData.srtPath,
+          jobId: transcribeData.jobId,
+          imageOverlays: wizardState.imageOverlays,
+          captionOptions: wizardState.captionOptions,
+          backgroundMusicId: wizardState.selectedMusicId,
+        }),
+      });
+
+      if (!overlayResponse.ok) {
+        const errorData = await overlayResponse.json();
+        throw new Error(errorData.error || 'Video overlay failed');
+      }
+      const overlayData = await overlayResponse.json();
+
+      if (!overlayData.success) {
+        throw new Error(overlayData.error || 'Video overlay failed');
+      }
 
       const videoResult: VideoResult = {
         id: transcribeData.jobId || '',
-        url: finalVideoUrl,
+        url: `/videos/${transcribeData.jobId}.mp4`,
         thumbnail: '', // TODO: Generate thumbnail
         duration: transcribeData.duration || 0,
         resolution: '1080x1920',
@@ -233,7 +244,8 @@ export default function VideoCreationWizard({
         isGenerating: false,
         loadingStage: '',
       });
-      alert('Failed to generate video. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate video. Please try again.';
+      alert(errorMessage);
     }
   };
 
@@ -283,6 +295,7 @@ export default function VideoCreationWizard({
           <Step6Images
             transcriptLines={wizardState.transcriptLines}
             jobId={wizardState.generatedVideo?.id || ''}
+            scriptText={wizardState.scriptText}
             imageOverlays={wizardState.imageOverlays}
             onComplete={(overlays) => {
               updateState({ imageOverlays: overlays });
