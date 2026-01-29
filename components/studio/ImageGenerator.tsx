@@ -150,8 +150,8 @@ export function ImageGenerator({
           i === index
             ? {
                 ...s,
-                imageUrl: data.imageUrl,
-                imagePath: data.imagePath,
+                imageUrl: data.imageUrl || null,
+                imagePath: data.imagePath || null,
                 isGenerating: false,
                 error: null,
               }
