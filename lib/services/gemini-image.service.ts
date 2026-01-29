@@ -42,7 +42,7 @@ export async function generateImageFromPrompt(
       response_format: 'b64_json', // Get base64 directly instead of URL
     });
 
-    const imageB64 = response.data[0]?.b64_json;
+    const imageB64 = response.data?.[0]?.b64_json;
     if (!imageB64) {
       throw new Error('No image data returned from DALL-E');
     }
