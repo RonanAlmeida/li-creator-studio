@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { CaptionOptions, VideoResult } from '@/types';
 import type { ImageOverlay, TranscriptLine } from '@/lib/types/image-overlay';
+import { generateId } from '@/lib/utils';
+import { DEFAULT_VOICE } from '@/lib/constants/voices';
 import ProgressBar from './ProgressBar';
 import WizardNavigation from './WizardNavigation';
 import Step1ScriptInput from './steps/Step1ScriptInput';
@@ -18,6 +20,7 @@ interface WizardState {
   currentStep: number;
   completedSteps: Set<number>;
   generationType: 'text-to-video' | 'image-to-video' | 'video-to-video';
+  jobId: string; // Generated at start for image generation
 
   // Step 1
   scriptText: string;
@@ -65,11 +68,12 @@ export default function VideoCreationWizard({
     currentStep: 1,
     completedSteps: new Set(),
     generationType,
+    jobId: generateId(), // Generate jobId at start for image generation
     scriptText: initialScript,
     captionText: initialCaption,
     uploadedFile: null,
     hashtags: initialHashtags,
-    selectedVoiceId: 'alloy',
+    selectedVoiceId: DEFAULT_VOICE.id,
     selectedMusicId: 'none',
     captionOptions: {
       enabled: true,
@@ -294,7 +298,7 @@ export default function VideoCreationWizard({
         return (
           <Step6Images
             transcriptLines={wizardState.transcriptLines}
-            jobId={wizardState.generatedVideo?.id || ''}
+            jobId={wizardState.jobId}
             scriptText={wizardState.scriptText}
             imageOverlays={wizardState.imageOverlays}
             onComplete={(overlays) => {
