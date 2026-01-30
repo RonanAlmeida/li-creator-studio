@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import sharp from 'sharp';
-import axios from 'axios';
+import { GoogleGenAI } from '@google/genai';
 
 export async function generateImageFromPrompt(
   prompt: string,
@@ -30,38 +30,48 @@ export async function generateImageFromPrompt(
   try {
     console.log('[Image Gen] Calling Gemini 2.5 Flash Image with prompt:', prompt);
 
-    // Call Gemini 2.5 Flash Image Preview API
-    const response = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        contents: [
-          {
-            parts: [
-              {
-                text: `Simple, clean, minimalist icon: ${prompt}. Icon style, no text, plain background.`,
-              }
-            ]
-          }
-        ],
-        generationConfig: {
-          temperature: 1,
-          topP: 0.95,
-          topK: 40,
-          maxOutputTokens: 8192,
-        }
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
+    // Initialize Google GenAI SDK
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+    // Generate image using Gemini 2.5 Flash Image
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-image',
+      contents: `${prompt}. Cute cartoon illustration style, simple flat design, not too detailed, friendly and approachable, small icon-like size.`,
+      config: {
+        responseModalities: ['TEXT', 'IMAGE'], // Required to get image output
+        imageConfig: {
+          aspectRatio: '1:1', // Square images work best for overlays
+          imageSize: '1K',    // Smaller size for cartoon style
         },
-      }
-    );
+      },
+    });
 
     // Extract base64 image from response
-    // Gemini returns the image in candidates[0].content.parts[0].inlineData.data
-    const imageB64 = response.data?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+    // IMPORTANT: Loop through ALL parts - image might not be in parts[0]
+    let imageB64: string | undefined;
+
+    try {
+      const parts = response?.candidates?.[0]?.content?.parts || [];
+      console.log('[Image Gen] Response has', parts.length, 'parts');
+
+      // Find the part with image data
+      for (const part of parts) {
+        if (part.inlineData?.data) {
+          imageB64 = part.inlineData.data;
+          console.log('[Image Gen] ✓ Found image in parts, length:', imageB64.length);
+          break;
+        } else if (part.text) {
+          console.log('[Image Gen] Found text part:', part.text.substring(0, 100));
+        }
+      }
+    } catch (err) {
+      console.error('[Image Gen] Error during extraction:', err);
+    }
+
     if (!imageB64) {
-      throw new Error('No image data returned from Gemini');
+      console.error('[Image Gen] Failed to extract image from response.');
+      console.error('[Image Gen] This usually means Gemini returned text-only or the prompt was unclear.');
+      throw new Error('No image data returned from Gemini - prompt may need to be more specific');
     }
 
     console.log('[Image Gen] Image generated successfully, decoding base64...');
@@ -95,15 +105,11 @@ export async function generateImageFromPrompt(
       imageUrl: publicImageUrl,
     };
   } catch (error) {
-    console.error('Error generating image from Imagen:', error);
+    console.error('Error generating image from Gemini:', error);
 
-    // If Imagen fails, provide helpful error message
-    if (axios.isAxiosError(error)) {
-      console.error('Imagen API error:', error.response?.data);
-      throw new Error(`Imagen API error: ${error.response?.data?.error?.message || error.message}`);
-    }
-
-    throw error;
+    // Provide helpful error message
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    throw new Error(`Gemini image generation failed: ${errorMessage}`);
   }
 }
 

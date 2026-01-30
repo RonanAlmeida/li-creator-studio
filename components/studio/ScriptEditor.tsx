@@ -33,12 +33,15 @@ const DEFAULT_MASTER_PROMPT = `you are my linkedin video script writer. i create
 take my post text (and optional image) and turn it into a tight, human script for short videos. write in plain english, high signal, authentic voice. target 20–60 seconds. focus on one idea.
 
 RULES:
-- start with a punchy hook in 1 line
+- start with a punchy hook in 1 line 
+- caption text should use my comapny name GSOBA in the title
+- title should be less than 7 words 
+- click baity text too 
 - explain the why fast, then the how in simple steps or a mini example
 - sentences 6–14 words so it reads well out loud
 - cut filler words and buzzwords
 - 1 stat or proof point max, only if useful and specific
-- keep it conversational, not salesy
+- keep it conversational, and funny not salesy 
 - end with a soft next step
 - if i include an image, reference it early and naturally
 - use specific examples and real scenarios when relevant
@@ -48,7 +51,7 @@ output format (CRITICAL - follow this exact structure):
 TITLE: 3–6 words that grab attention
 
 SCRIPT:
-90–160 words, natural conversational tone, formatted as a single flowing paragraph
+70-100 words, natural conversational tone, formatted as a single flowing paragraph
 
 HASHTAGS:
 3-5 relevant hashtags for LinkedIn (mix of popular and niche tags like #ProductManagement #AI #TechLeadership #Innovation)
@@ -147,12 +150,31 @@ export default function ScriptEditor({ onScriptGenerated, importedText, imported
 
       // Auto-submit to generate video ideas
       setTimeout(() => {
+        // Use a special prompt for video ideas (ignore the master script prompt)
+        const videoIdeasPrompt = `You are a creative video content strategist. Generate 5 video ideas based on the LinkedIn post provided.
+
+For each video idea, follow this EXACT format:
+
+1. **Title:** "Your catchy title here"
+
+   **Description:** Your description here
+
+   **Why Engaging:** Explanation here
+
+2. **Title:** "Next title"
+
+   **Description:** Next description
+
+   **Why Engaging:** Next explanation
+
+Continue for all 5 ideas. Be creative and make each idea actionable.`;
+
         fetch('/api/generate-script', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            userInput: `Generate 5 creative video ideas I could make based on this LinkedIn post:\n\n"${importedPost.content}"\n\nFor each idea, use this exact format:\n\n1. **Title:** "Your catchy title here"\n\n   **Description:** Your description here\n\n   **Why Engaging:** Explanation here\n\n2. **Title:** "Next title"\n\n   **Description:** Next description\n\n   **Why Engaging:** Next explanation\n\nAnd so on for all 5 ideas.`,
-            masterPrompt
+            userInput: `Generate 5 creative video ideas I could make based on this LinkedIn post:\n\n"${importedPost.content}"`,
+            masterPrompt: videoIdeasPrompt
           }),
         })
           .then(async (response) => {
