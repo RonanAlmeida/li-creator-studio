@@ -56,6 +56,7 @@ interface VideoCreationWizardProps {
   initialScript?: string;
   initialCaption?: string;
   initialHashtags?: string;
+  initialImageUrl?: string | null;
 }
 
 export default function VideoCreationWizard({
@@ -64,6 +65,7 @@ export default function VideoCreationWizard({
   initialScript = '',
   initialCaption = '',
   initialHashtags = '',
+  initialImageUrl = null,
 }: VideoCreationWizardProps) {
   const [wizardState, setWizardState] = useState<WizardState>({
     currentStep: 1,
@@ -91,16 +93,52 @@ export default function VideoCreationWizard({
     generatedVideo: null,
   });
 
+  // Update generationType when tab changes
+  useEffect(() => {
+    console.log('VideoCreationWizard: generationType changed to:', generationType);
+    updateState({ generationType });
+  }, [generationType]);
+
   // Update wizard state when external props change (from AI Script Writer)
   useEffect(() => {
-    if (initialScript || initialCaption || initialHashtags) {
-      updateState({
-        scriptText: initialScript,
-        captionText: initialCaption,
-        hashtags: initialHashtags,
-      });
-    }
+    console.log('VideoCreationWizard: Props changed', {
+      initialScript: initialScript?.substring(0, 50),
+      initialCaption,
+      initialHashtags,
+    });
+
+    // Always update state when props change, regardless of whether they're truthy
+    console.log('VideoCreationWizard: Updating state with hashtags:', initialHashtags);
+    updateState({
+      scriptText: initialScript,
+      captionText: initialCaption,
+      hashtags: initialHashtags,
+    });
   }, [initialScript, initialCaption, initialHashtags]);
+
+  // Dedicated useEffect for hashtags to ensure they're always synced
+  useEffect(() => {
+    console.log('VideoCreationWizard: Syncing hashtags from prop:', initialHashtags);
+    updateState({ hashtags: initialHashtags });
+  }, [initialHashtags]);
+
+  // Load initial image from URL if provided
+  useEffect(() => {
+    if (initialImageUrl) {
+      console.log('VideoCreationWizard: Loading image from URL:', initialImageUrl);
+      fetch(initialImageUrl)
+        .then(res => res.blob())
+        .then(blob => {
+          const fileName = 'imported-image.jpg';
+          const file = new File([blob], fileName, { type: blob.type });
+          updateState({ uploadedFile: file });
+          console.log('VideoCreationWizard: Image loaded and set as file');
+        })
+        .catch(err => {
+          console.error('VideoCreationWizard: Failed to load image:', err);
+        });
+    }
+  }, [initialImageUrl]);
 
   const updateState = (updates: Partial<WizardState>) => {
     setWizardState((prev) => ({ ...prev, ...updates }));
@@ -173,7 +211,7 @@ export default function VideoCreationWizard({
   };
 
   const handleGenerate = async () => {
-    updateState({ isGenerating: true, loadingStage: 'Generating video...' });
+    updateState({ isGenerating: true, loadingStage: 'Step 1/3: Generating audio narration...' });
 
     try {
       // Convert music ID to filename
@@ -181,6 +219,15 @@ export default function VideoCreationWizard({
         (track) => track.id === wizardState.selectedMusicId
       );
       const backgroundMusicFilename = selectedMusic?.filename || '';
+
+      // Simulate progress stages to match backend
+      setTimeout(() => {
+        updateState({ loadingStage: 'Step 2/3: Transcribing audio with timestamps...' });
+      }, 3000);
+
+      setTimeout(() => {
+        updateState({ loadingStage: 'Step 3/3: Overlaying audio, captions, and images on video...' });
+      }, 8000);
 
       // Call /api/video/overlay which does everything:
       // 1. Generate audio (ElevenLabs)
@@ -220,10 +267,14 @@ export default function VideoCreationWizard({
         createdAt: new Date(overlayData.video.createdAt),
       };
 
+      const newCompletedSteps = new Set(wizardState.completedSteps);
+      newCompletedSteps.add(7); // Mark Review step as completed
+
       updateState({
         isGenerating: false,
         generatedVideo: videoResult,
         currentStep: 8,
+        completedSteps: newCompletedSteps,
       });
 
       onComplete(videoResult);
@@ -307,15 +358,14 @@ export default function VideoCreationWizard({
         return (
           <Step8Preview
             video={wizardState.generatedVideo}
+            captionText={wizardState.captionText}
+            scriptText={wizardState.scriptText}
+            hashtags={wizardState.hashtags}
             onRegenerate={() => updateState({ currentStep: 7 })}
             onDownload={() => {
               if (wizardState.generatedVideo) {
                 window.open(wizardState.generatedVideo.url, '_blank');
               }
-            }}
-            onLaunchCampaign={() => {
-              // TODO: Implement campaign launch
-              alert('Campaign launch coming soon!');
             }}
           />
         );
@@ -332,7 +382,7 @@ export default function VideoCreationWizard({
         onStepClick={handleJumpToStep}
       />
 
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto px-6 pt-4 pb-6">
         <div className="wizard-step max-w-4xl mx-auto">{renderStep()}</div>
       </div>
 

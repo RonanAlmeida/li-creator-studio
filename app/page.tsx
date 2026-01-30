@@ -158,6 +158,7 @@ export default function Home() {
     setCaptionText(title);
 
     // Set the hashtags
+    console.log('page.tsx: Setting hashtags state to:', extractedHashtags);
     setHashtags(extractedHashtags);
 
     // Generate transcript lines with timing estimates
@@ -171,22 +172,10 @@ export default function Home() {
     if (lastImportedPostImage) {
       // Switch to image-to-video tab
       setActiveTab('image-to-video');
+      addToast('success', 'Script with image imported!');
 
-      // Load the image from the URL
-      fetch(lastImportedPostImage)
-        .then(res => res.blob())
-        .then(blob => {
-          const file = new File([blob], 'imported-image.jpg', { type: 'image/jpeg' });
-          setSelectedImage(file);
-          addToast('success', 'Script with image imported! Add images to your video.');
-        })
-        .catch(err => {
-          console.error('Error loading image:', err);
-          addToast('success', 'Script imported! Add images to your video.');
-        });
-
-      // Clear the stored image URL
-      setLastImportedPostImage(null);
+      // DON'T clear lastImportedPostImage here - let the wizard use it
+      // The wizard's useEffect will handle loading the image
     } else {
       // No image, stay on text-to-video
       addToast('success', 'Script imported! Add images to your video.');
@@ -387,9 +376,12 @@ export default function Home() {
                 initialScript={text}
                 initialCaption={captionText}
                 initialHashtags={hashtags}
+                initialImageUrl={lastImportedPostImage}
                 onComplete={(video) => {
                   setGeneratedVideo(video);
                   addToast('success', 'Video generated successfully!');
+                  // Clear the imported image URL after video is generated
+                  setLastImportedPostImage(null);
                 }}
               />
             </div>
@@ -521,13 +513,10 @@ interface SettingsModalProps {
 
 function SettingsModal({ onClose }: SettingsModalProps) {
   const [apiKeys, setApiKeys] = useState({
-    textToVideo: '',
-    imageToVideo: '',
-    videoToVideo: '',
-    captions: '',
-    audio: '',
     openai: '',
-    anthropic: '',
+    elevenlabs: '',
+    gemini: '',
+    falai: '',
   });
 
   const handleSave = () => {
@@ -550,63 +539,10 @@ function SettingsModal({ onClose }: SettingsModalProps) {
         {/* Content */}
         <div className="p-6 max-h-[70vh] overflow-y-auto">
           <div className="space-y-6">
-            {/* Video Generation APIs */}
+            {/* Required API Keys */}
             <div>
               <h3 className="text-base font-bold text-linkedin-gray-900 mb-4 pb-2 border-b border-linkedin-gray-200">
-                Video Generation APIs
-              </h3>
-              <div className="space-y-4">
-                <ApiKeyInput
-                  label="Text to Video API Key"
-                  placeholder="sk-..."
-                  value={apiKeys.textToVideo}
-                  onChange={(val) => setApiKeys({ ...apiKeys, textToVideo: val })}
-                  description="API key for text-to-video generation service"
-                />
-                <ApiKeyInput
-                  label="Image to Video API Key"
-                  placeholder="sk-..."
-                  value={apiKeys.imageToVideo}
-                  onChange={(val) => setApiKeys({ ...apiKeys, imageToVideo: val })}
-                  description="API key for image-to-video conversion"
-                />
-                <ApiKeyInput
-                  label="Video to Video API Key"
-                  placeholder="sk-..."
-                  value={apiKeys.videoToVideo}
-                  onChange={(val) => setApiKeys({ ...apiKeys, videoToVideo: val })}
-                  description="API key for video transformation"
-                />
-              </div>
-            </div>
-
-            {/* Media Processing APIs */}
-            <div>
-              <h3 className="text-base font-bold text-linkedin-gray-900 mb-4 pb-2 border-b border-linkedin-gray-200">
-                Media Processing APIs
-              </h3>
-              <div className="space-y-4">
-                <ApiKeyInput
-                  label="Captions API Key"
-                  placeholder="sk-..."
-                  value={apiKeys.captions}
-                  onChange={(val) => setApiKeys({ ...apiKeys, captions: val })}
-                  description="API key for caption generation and styling"
-                />
-                <ApiKeyInput
-                  label="Audio API Key"
-                  placeholder="sk-..."
-                  value={apiKeys.audio}
-                  onChange={(val) => setApiKeys({ ...apiKeys, audio: val })}
-                  description="API key for audio processing and generation"
-                />
-              </div>
-            </div>
-
-            {/* AI Services */}
-            <div>
-              <h3 className="text-base font-bold text-linkedin-gray-900 mb-4 pb-2 border-b border-linkedin-gray-200">
-                AI Services
+                Required API Keys
               </h3>
               <div className="space-y-4">
                 <ApiKeyInput
@@ -614,14 +550,32 @@ function SettingsModal({ onClose }: SettingsModalProps) {
                   placeholder="sk-..."
                   value={apiKeys.openai}
                   onChange={(val) => setApiKeys({ ...apiKeys, openai: val })}
-                  description="For GPT-powered script generation"
+                  description="For AI script generation and audio transcription"
+                  link="https://platform.openai.com/api-keys"
                 />
                 <ApiKeyInput
-                  label="Anthropic API Key"
-                  placeholder="sk-ant-..."
-                  value={apiKeys.anthropic}
-                  onChange={(val) => setApiKeys({ ...apiKeys, anthropic: val })}
-                  description="For Claude-powered content assistance"
+                  label="ElevenLabs API Key"
+                  placeholder="..."
+                  value={apiKeys.elevenlabs}
+                  onChange={(val) => setApiKeys({ ...apiKeys, elevenlabs: val })}
+                  description="For AI voice narration and text-to-speech"
+                  link="https://elevenlabs.io/app/settings/api-keys"
+                />
+                <ApiKeyInput
+                  label="Gemini API Key"
+                  placeholder="..."
+                  value={apiKeys.gemini}
+                  onChange={(val) => setApiKeys({ ...apiKeys, gemini: val })}
+                  description="For AI image generation with Google Gemini"
+                  link="https://makersuite.google.com/app/apikey"
+                />
+                <ApiKeyInput
+                  label="Fal.ai API Key"
+                  placeholder="..."
+                  value={apiKeys.falai}
+                  onChange={(val) => setApiKeys({ ...apiKeys, falai: val })}
+                  description="For video generation with Fal.ai"
+                  link="https://fal.ai/dashboard/keys"
                 />
               </div>
             </div>
@@ -659,16 +613,32 @@ interface ApiKeyInputProps {
   value: string;
   onChange: (value: string) => void;
   description?: string;
+  link?: string;
 }
 
-function ApiKeyInput({ label, placeholder, value, onChange, description }: ApiKeyInputProps) {
+function ApiKeyInput({ label, placeholder, value, onChange, description, link }: ApiKeyInputProps) {
   return (
     <div>
       <label className="block text-sm font-semibold text-linkedin-gray-900 mb-1">
         {label}
       </label>
       {description && (
-        <p className="text-xs text-linkedin-gray-600 mb-2">{description}</p>
+        <p className="text-xs text-linkedin-gray-600 mb-2">
+          {description}
+          {link && (
+            <>
+              {' - '}
+              <a
+                href={link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-linkedin-blue hover:underline"
+              >
+                Get API key
+              </a>
+            </>
+          )}
+        </p>
       )}
       <input
         type="password"

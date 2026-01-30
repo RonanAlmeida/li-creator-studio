@@ -8,17 +8,17 @@ export interface Voice {
 
 export const ELEVENLABS_VOICES: Voice[] = [
   {
-    id: 'VR6AewLTigWG4xSOukaG',
-    name: 'Arnold',
-    description: 'Crisp, professional voice',
-    previewUrl: '/voice-previews/arnold.mp3',
-    category: 'male',
-  },
-  {
     id: 'ErXwobaYiN019PkySvjV',
     name: 'Antoni',
     description: 'Well-rounded, smooth voice',
     previewUrl: '/voice-previews/antoni.mp3',
+    category: 'male',
+  },
+  {
+    id: 'VR6AewLTigWG4xSOukaG',
+    name: 'Arnold',
+    description: 'Crisp, professional voice',
+    previewUrl: '/voice-previews/arnold.mp3',
     category: 'male',
   },
   {
@@ -51,4 +51,4 @@ export const ELEVENLABS_VOICES: Voice[] = [
   },
 ];
 
-export const DEFAULT_VOICE = ELEVENLABS_VOICES[0]; // Arnold
+export const DEFAULT_VOICE = ELEVENLABS_VOICES[0]; // Antoni

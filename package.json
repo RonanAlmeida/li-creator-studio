@@ -13,6 +13,7 @@
     "@fal-ai/client": "^1.7.2",
     "@fal-ai/serverless-client": "^0.15.0",
     "@google-cloud/aiplatform": "^6.1.0",
+    "@google/generative-ai": "^0.24.1",
     "axios": "^1.13.4",
     "clsx": "^2.1.1",
     "elevenlabs": "^1.59.0",

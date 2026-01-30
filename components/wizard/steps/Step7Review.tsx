@@ -77,13 +77,25 @@ export default function Step7Review({
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
                 Creating Your Video
               </h3>
-              <p className="text-gray-600">{loadingStage}</p>
+              <p className="text-gray-600 font-medium">{loadingStage}</p>
             </div>
             <div className="w-full max-w-md bg-white rounded-lg p-4">
               <div className="flex items-center gap-3">
-                <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-[#0A66C2] to-[#004182] animate-pulse" />
+                <div className="flex-1 h-3 bg-gray-200 rounded-full overflow-hidden relative">
+                  <div
+                    className="h-full bg-gradient-to-r from-[#0A66C2] to-[#004182] transition-all duration-1000 ease-out"
+                    style={{
+                      width: loadingStage.includes('Step 1/3') ? '33%' :
+                             loadingStage.includes('Step 2/3') ? '66%' :
+                             loadingStage.includes('Step 3/3') ? '90%' : '10%'
+                    }}
+                  />
                 </div>
+                <span className="text-sm font-semibold text-gray-700 min-w-[45px] text-right">
+                  {loadingStage.includes('Step 1/3') ? '33%' :
+                   loadingStage.includes('Step 2/3') ? '66%' :
+                   loadingStage.includes('Step 3/3') ? '90%' : '10%'}
+                </span>
               </div>
             </div>
           </div>

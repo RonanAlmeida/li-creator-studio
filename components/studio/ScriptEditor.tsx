@@ -178,7 +178,10 @@ export default function ScriptEditor({ onScriptGenerated, importedText, imported
   }, [importedPost, masterPrompt]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Only auto-scroll if we have more than 1 message (don't scroll on first import)
+    if (messages.length > 1) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
     setCarouselIndex(0); // Reset carousel to first item on new messages
   }, [messages]);
 
@@ -313,7 +316,7 @@ export default function ScriptEditor({ onScriptGenerated, importedText, imported
 
   return (
     <>
-      <div className="bg-white rounded-xl shadow-linkedin flex flex-col h-[700px] overflow-hidden border border-linkedin-gray-200">
+      <div className="bg-white rounded-xl shadow-linkedin flex flex-col h-[850px] overflow-hidden border border-linkedin-gray-200">
         {/* Header */}
         <div className="px-4 py-2.5 border-b border-linkedin-gray-200 bg-white">
           <div className="flex items-center justify-between">
@@ -322,10 +325,10 @@ export default function ScriptEditor({ onScriptGenerated, importedText, imported
                 <div className="p-1.5 bg-linkedin-blue rounded-lg shadow-sm">
                   <PenTool className="w-4 h-4 text-white" />
                 </div>
-                <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-linkedin-success rounded-full border-2 border-white animate-pulse"></div>
+                <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-linkedin-success rounded-full border-2 border-white"></div>
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-linkedin-gray-900">AI Script Writer</h3>
+                <h3 className="text-sm font-semibold text-linkedin-gray-900">Script Writer</h3>
                 <p className="text-[11px] text-linkedin-gray-600 mt-0.5">Create engaging video scripts</p>
               </div>
             </div>
@@ -704,26 +707,26 @@ export default function ScriptEditor({ onScriptGenerated, importedText, imported
                 <div className="max-w-[95%] bg-white border border-linkedin-gray-200 rounded-xl shadow-md overflow-hidden">
                   {/* Caption/Title Skeleton */}
                   <div className="bg-linkedin-gray-50 border-b border-linkedin-gray-300 px-4 py-3 relative overflow-hidden">
-                    <div className="h-2 bg-linkedin-gray-200 rounded w-20 mb-2 relative z-10"></div>
-                    <div className="h-3 bg-linkedin-gray-200 rounded w-2/3 relative z-10"></div>
+                    <div className="h-2 bg-linkedin-gray-200 rounded w-20 mb-2 relative z-10 skeleton-bar"></div>
+                    <div className="h-3 bg-linkedin-gray-200 rounded w-2/3 relative z-10 skeleton-bar"></div>
                     <div className="absolute inset-0 shimmer-effect"></div>
                   </div>
 
                   {/* Script Body Skeleton */}
                   <div className="border-b border-linkedin-gray-300">
                     <div className="px-4 py-3 bg-linkedin-gray-50 border-b border-linkedin-gray-200 relative overflow-hidden">
-                      <div className="h-2 bg-linkedin-gray-200 rounded w-20 relative z-10"></div>
+                      <div className="h-2 bg-linkedin-gray-200 rounded w-20 relative z-10 skeleton-bar"></div>
                       <div className="absolute inset-0 shimmer-effect"></div>
                     </div>
                     <div className="px-4 py-4 bg-white space-y-2.5 relative overflow-hidden min-h-[200px]">
-                      <div className="h-2 bg-linkedin-gray-200 rounded w-full relative z-10"></div>
-                      <div className="h-2 bg-linkedin-gray-200 rounded w-11/12 relative z-10"></div>
-                      <div className="h-2 bg-linkedin-gray-200 rounded w-full relative z-10"></div>
-                      <div className="h-2 bg-linkedin-gray-200 rounded w-10/12 relative z-10"></div>
-                      <div className="h-2 bg-linkedin-gray-200 rounded w-full relative z-10"></div>
-                      <div className="h-2 bg-linkedin-gray-200 rounded w-9/12 relative z-10"></div>
-                      <div className="h-2 bg-linkedin-gray-200 rounded w-full relative z-10"></div>
-                      <div className="h-2 bg-linkedin-gray-200 rounded w-8/12 relative z-10"></div>
+                      <div className="h-2 bg-linkedin-gray-200 rounded w-full relative z-10 skeleton-bar"></div>
+                      <div className="h-2 bg-linkedin-gray-200 rounded w-11/12 relative z-10 skeleton-bar" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="h-2 bg-linkedin-gray-200 rounded w-full relative z-10 skeleton-bar" style={{ animationDelay: '0.2s' }}></div>
+                      <div className="h-2 bg-linkedin-gray-200 rounded w-10/12 relative z-10 skeleton-bar" style={{ animationDelay: '0.3s' }}></div>
+                      <div className="h-2 bg-linkedin-gray-200 rounded w-full relative z-10 skeleton-bar" style={{ animationDelay: '0.4s' }}></div>
+                      <div className="h-2 bg-linkedin-gray-200 rounded w-9/12 relative z-10 skeleton-bar" style={{ animationDelay: '0.5s' }}></div>
+                      <div className="h-2 bg-linkedin-gray-200 rounded w-full relative z-10 skeleton-bar" style={{ animationDelay: '0.6s' }}></div>
+                      <div className="h-2 bg-linkedin-gray-200 rounded w-8/12 relative z-10 skeleton-bar" style={{ animationDelay: '0.7s' }}></div>
                       <div className="absolute inset-0 shimmer-effect"></div>
                     </div>
                   </div>
@@ -731,13 +734,13 @@ export default function ScriptEditor({ onScriptGenerated, importedText, imported
                   {/* Hashtags Skeleton */}
                   <div className="border-b border-linkedin-gray-300">
                     <div className="px-4 py-3 bg-linkedin-gray-50 border-b border-linkedin-gray-200 relative overflow-hidden">
-                      <div className="h-2 bg-linkedin-gray-200 rounded w-16 relative z-10"></div>
+                      <div className="h-2 bg-linkedin-gray-200 rounded w-16 relative z-10 skeleton-bar"></div>
                       <div className="absolute inset-0 shimmer-effect"></div>
                     </div>
                     <div className="px-4 py-3 bg-white flex gap-2 relative overflow-hidden">
-                      <div className="h-5 w-16 bg-linkedin-gray-200 rounded-full relative z-10"></div>
-                      <div className="h-5 w-20 bg-linkedin-gray-200 rounded-full relative z-10"></div>
-                      <div className="h-5 w-14 bg-linkedin-gray-200 rounded-full relative z-10"></div>
+                      <div className="h-5 w-16 bg-linkedin-gray-200 rounded-full relative z-10 skeleton-bar"></div>
+                      <div className="h-5 w-20 bg-linkedin-gray-200 rounded-full relative z-10 skeleton-bar" style={{ animationDelay: '0.2s' }}></div>
+                      <div className="h-5 w-14 bg-linkedin-gray-200 rounded-full relative z-10 skeleton-bar" style={{ animationDelay: '0.4s' }}></div>
                       <div className="absolute inset-0 shimmer-effect"></div>
                     </div>
                   </div>
@@ -745,12 +748,10 @@ export default function ScriptEditor({ onScriptGenerated, importedText, imported
                   {/* Status */}
                   <div className="px-4 py-2 bg-linkedin-gray-50 border-t border-linkedin-gray-200">
                     <div className="flex items-center gap-2">
-                      <div className="flex gap-1">
-                        <div className="w-1 h-1 bg-linkedin-blue rounded-full animate-pulse" style={{ animationDelay: '0ms' }}></div>
-                        <div className="w-1 h-1 bg-linkedin-blue rounded-full animate-pulse" style={{ animationDelay: '150ms' }}></div>
-                        <div className="w-1 h-1 bg-linkedin-blue rounded-full animate-pulse" style={{ animationDelay: '300ms' }}></div>
+                      <div className="flex items-center gap-1">
+                        <Sparkles className="w-3.5 h-3.5 text-linkedin-blue" />
                       </div>
-                      <span className="text-[9px] text-linkedin-gray-500">Generating your script</span>
+                      <span className="text-[9px] font-medium text-linkedin-blue">Generating your script...</span>
                     </div>
                   </div>
                 </div>
@@ -828,15 +829,24 @@ export default function ScriptEditor({ onScriptGenerated, importedText, imported
           0% { transform: translateX(-100%); }
           100% { transform: translateX(100%); }
         }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.6; }
+        }
         .animate-slideIn { animation: slideIn 0.3s ease-out; }
         .shimmer-effect {
           background: linear-gradient(
             90deg,
-            transparent,
-            rgba(255, 255, 255, 0.6),
-            transparent
+            transparent 0%,
+            rgba(255, 255, 255, 0.3) 20%,
+            rgba(255, 255, 255, 0.8) 50%,
+            rgba(255, 255, 255, 0.3) 80%,
+            transparent 100%
           );
-          animation: shimmer 2s infinite;
+          animation: shimmer 1.2s infinite ease-in-out;
+        }
+        .skeleton-bar {
+          animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
       `}</style>
     </div>

@@ -67,9 +67,16 @@ export async function overlayAudioAndCaptions(
       .replace(/:/g, '\\:')
       .replace(/ /g, '\\ ');
 
+    // Calculate video loop count based on audio duration
+    // Template video is ~6 seconds, we need to loop it to match audio duration
+    const templateVideoDuration = 6; // seconds
+    const loopCount = Math.ceil(duration / templateVideoDuration);
+    console.log(`[Video Overlay] Audio duration: ${duration}s, looping video ${loopCount} times`);
+
     await new Promise<void>((resolve, reject) => {
       const command = ffmpeg()
         .input(videoPath)
+        .inputOptions([`-stream_loop ${loopCount - 1}`]) // loop the video (N-1 because first play counts as 1)
         .input(audioPath);
 
       // Track input indices for ffmpeg

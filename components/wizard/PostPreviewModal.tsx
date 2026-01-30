@@ -1,58 +1,44 @@
 'use client';
 
+import { X } from 'lucide-react';
 import { VideoResult } from '@/types';
 
-interface Step8PreviewProps {
-  video: VideoResult | null;
+interface PostPreviewModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  video: VideoResult;
   captionText: string;
   scriptText: string;
   hashtags: string;
-  onRegenerate: () => void;
-  onDownload: () => void;
 }
 
-export default function Step8Preview({
+export default function PostPreviewModal({
+  isOpen,
+  onClose,
   video,
   captionText,
   scriptText,
   hashtags,
-  onRegenerate,
-  onDownload,
-}: Step8PreviewProps) {
-  if (!video) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-gray-500">No video to preview</p>
-      </div>
-    );
-  }
+}: PostPreviewModalProps) {
+  if (!isOpen) return null;
 
   return (
-    <div className="space-y-6">
-      {/* Success Message */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-          <svg
-            className="w-5 h-5 text-green-600"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4 animate-fade-in">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-slide-up">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 sticky top-0 bg-white z-10">
+          <h2 className="text-lg font-semibold text-gray-900">Post Preview</h2>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M5 13l4 4L19 7"
-            />
-          </svg>
+            <X className="w-5 h-5 text-gray-600" />
+          </button>
         </div>
-        <h2 className="text-lg font-semibold text-gray-900">Your video is ready!</h2>
-      </div>
 
-      {/* LinkedIn Post Preview */}
-      <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-        {/* Profile Header */}
-        <div className="p-4">
+        {/* LinkedIn Post Preview */}
+        <div className="p-6">
+          {/* Profile Header */}
           <div className="flex items-start gap-3 mb-3">
             <div className="w-12 h-12 rounded-full overflow-hidden bg-linkedin-gray-200">
               <img
@@ -102,28 +88,27 @@ export default function Step8Preview({
               </p>
             )}
           </div>
-        </div>
 
-        {/* Video */}
-        <div className="relative bg-gray-900 mx-auto" style={{ maxWidth: '300px' }}>
-          <video
-            src={video.url}
-            controls
-            autoPlay
-            muted
-            loop
-            playsInline
-            className="w-full object-contain"
-            style={{ aspectRatio: '9/16' }}
-            preload="auto"
-          >
-            Your browser does not support the video tag.
-          </video>
-        </div>
+          {/* Video */}
+          <div className="relative bg-gray-900 rounded-lg overflow-hidden mb-3 mx-auto" style={{ maxWidth: '300px', maxHeight: '533px' }}>
+            <video
+              src={video.url}
+              controls
+              autoPlay
+              muted
+              loop
+              playsInline
+              className="w-full object-contain"
+              style={{ maxHeight: '533px', aspectRatio: '9/16' }}
+              preload="auto"
+            >
+              Your browser does not support the video tag.
+            </video>
+          </div>
 
-        {/* Action Buttons */}
-        <div className="border-t border-gray-200 p-2">
-          <div className="flex items-center justify-around">
+          {/* Action Buttons */}
+          <div className="border-t border-gray-200 mt-3 pt-1">
+            <div className="flex items-center justify-around py-1">
             {['Like', 'Comment', 'Repost', 'Send'].map((action) => (
               <button
                 key={action}
@@ -152,73 +137,28 @@ export default function Step8Preview({
                 <span>{action}</span>
               </button>
             ))}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Action Buttons */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <button
-          onClick={onRegenerate}
-          className="flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all"
-        >
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+        {/* Footer Actions */}
+        <div className="p-4 bg-gray-50 border-t border-gray-200 flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-            />
-          </svg>
-          <span>Regenerate</span>
-        </button>
-
-        <button
-          onClick={onDownload}
-          className="flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all"
-        >
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+            Cancel
+          </button>
+          <button
+            onClick={() => {
+              // TODO: Implement actual posting to LinkedIn
+              alert('Post to LinkedIn coming soon!');
+            }}
+            className="flex-1 px-4 py-2.5 bg-[#0A66C2] text-white rounded-lg text-sm font-semibold hover:bg-[#004182] transition-colors"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-            />
-          </svg>
-          <span>Download</span>
-        </button>
-
-        <button
-          onClick={() => {
-            alert('Post to LinkedIn coming soon!');
-          }}
-          className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-[#0A66C2] to-[#004182] rounded-lg text-sm font-semibold text-white hover:shadow-lg transition-all"
-        >
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-            />
-          </svg>
-          <span>Post to LinkedIn</span>
-        </button>
+            Post to LinkedIn
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -1,42 +1,124 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { X } from 'lucide-react';
+
 interface Step2HashtagsProps {
   hashtags: string;
   onChange: (hashtags: string) => void;
 }
 
 export default function Step2Hashtags({ hashtags, onChange }: Step2HashtagsProps) {
-  const hashtagCount = hashtags
+  const [inputValue, setInputValue] = useState('');
+
+  useEffect(() => {
+    console.log('Step2Hashtags: Received hashtags prop:', hashtags);
+  }, [hashtags]);
+
+  const hashtagArray = hashtags
     .split(' ')
-    .filter((tag) => tag.startsWith('#') && tag.length > 1).length;
+    .filter((tag) => tag.startsWith('#') && tag.length > 1);
+
+  const hasGeneratedHashtags = hashtagArray.length > 0;
+
+  const removeHashtag = (tagToRemove: string) => {
+    const updatedHashtags = hashtagArray
+      .filter((tag) => tag !== tagToRemove)
+      .join(' ');
+    onChange(updatedHashtags);
+  };
+
+  const addHashtag = () => {
+    const trimmed = inputValue.trim();
+    if (!trimmed) return;
+
+    // Add # if not present
+    const newTag = trimmed.startsWith('#') ? trimmed : `#${trimmed}`;
+
+    // Check if already exists
+    if (hashtagArray.includes(newTag)) {
+      setInputValue('');
+      return;
+    }
+
+    const updatedHashtags = [...hashtagArray, newTag].join(' ');
+    onChange(updatedHashtags);
+    setInputValue('');
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addHashtag();
+    }
+  };
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Add Hashtags</h2>
         <p className="text-gray-600">
-          Help your video reach the right audience with relevant hashtags (optional)
+          {hasGeneratedHashtags
+            ? 'AI-generated hashtags from your script. Edit or add more as needed.'
+            : 'Help your video reach the right audience with relevant hashtags (optional)'}
         </p>
       </div>
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Hashtags
+          {hasGeneratedHashtags && (
+            <span className="ml-2 text-xs font-normal text-[#0A66C2]">
+              (Auto-generated from script)
+            </span>
+          )}
         </label>
-        <input
-          type="text"
-          value={hashtags}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="#marketing #socialmedia #content"
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A66C2] focus:border-transparent"
-        />
+
+        {/* Hashtag Pills */}
+        {hashtagArray.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            {hashtagArray.map((tag, index) => (
+              <div
+                key={index}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#0A66C2] text-[#0A66C2] rounded-full text-sm font-medium shadow-sm"
+              >
+                <span>{tag}</span>
+                <button
+                  onClick={() => removeHashtag(tag)}
+                  className="hover:bg-[#0A66C2] hover:text-white rounded-full p-0.5 transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Add Hashtag Input */}
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Add hashtag (e.g., marketing or #marketing)"
+            className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A66C2] focus:border-transparent"
+          />
+          <button
+            onClick={addHashtag}
+            className="px-6 py-3 bg-[#0A66C2] text-white rounded-lg hover:bg-[#004182] transition-colors font-medium"
+          >
+            Add
+          </button>
+        </div>
+
         <div className="flex items-center justify-between mt-2">
           <p className="text-sm text-gray-500">
-            Separate hashtags with spaces
+            Press Enter or click Add to include a hashtag
           </p>
-          {hashtagCount > 0 && (
+          {hashtagArray.length > 0 && (
             <p className="text-sm font-medium text-[#0A66C2]">
-              {hashtagCount} hashtag{hashtagCount !== 1 ? 's' : ''}
+              {hashtagArray.length} hashtag{hashtagArray.length !== 1 ? 's' : ''}
             </p>
           )}
         </div>
@@ -66,7 +148,7 @@ export default function Step2Hashtags({ hashtags, onChange }: Step2HashtagsProps
         </div>
       </div>
 
-      {hashtags.trim() === '' && (
+      {hashtagArray.length === 0 && (
         <div className="text-center py-8">
           <svg
             className="w-16 h-16 mx-auto text-gray-300 mb-3"

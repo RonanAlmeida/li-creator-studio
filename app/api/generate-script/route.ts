@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
       console.error('OPEN_AI_API_KEY not found in environment variables');
       return NextResponse.json(
         {
-          error: 'Your API keys are not configured. Please add your OpenAI API key to the .env file.\n\nRequired: OPEN_AI_API_KEY for script generation.'
+          error: 'API Keys Not Configured\n\nPlease add the following API keys to your .env file:\n\n- OPEN_AI_API_KEY (AI script generation)\n- GEMINI_API_KEY (Image generation with Gemini)\n- FAL_KEY (Video generation with Fal.ai)\n\nGet your keys:\n- OpenAI: https://platform.openai.com/api-keys\n- Gemini: https://makersuite.google.com/app/apikey\n- Fal.ai: https://fal.ai/dashboard/keys'
         },
         { status: 500 }
       );

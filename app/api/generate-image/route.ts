@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       } as ImageGenerationResponse);
     }
 
-    // Generate image using DALL-E
+    // Generate image using Google Imagen
     const result = await generateImageFromPrompt(prompt, jobId, imageIndex);
 
     return NextResponse.json({

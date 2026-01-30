@@ -1,28 +1,18 @@
 import fs from 'fs';
 import path from 'path';
 import sharp from 'sharp';
-import OpenAI from 'openai';
-
-// Lazy initialize OpenAI client to avoid build-time errors
-let openai: OpenAI | null = null;
-
-function getOpenAIClient(): OpenAI {
-  if (!openai) {
-    if (!process.env.OPEN_AI_API_KEY) {
-      throw new Error('OPEN_AI_API_KEY is not configured in environment variables');
-    }
-    openai = new OpenAI({
-      apiKey: process.env.OPEN_AI_API_KEY,
-    });
-  }
-  return openai;
-}
+import axios from 'axios';
 
 export async function generateImageFromPrompt(
   prompt: string,
   jobId: string,
   imageIndex: number
 ): Promise<{ imagePath: string; imageUrl: string }> {
+
+  // Check for API key
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error('GEMINI_API_KEY is not configured in environment variables');
+  }
 
   // Create directory for images if it doesn't exist
   const imageDir = path.join(
@@ -38,22 +28,40 @@ export async function generateImageFromPrompt(
   }
 
   try {
-    console.log('[Image Gen] Calling DALL-E 3 with prompt:', prompt);
+    console.log('[Image Gen] Calling Gemini 2.5 Flash Image with prompt:', prompt);
 
-    // Call DALL-E 3 API with base64 response to avoid download issues
-    const client = getOpenAIClient();
-    const response = await client.images.generate({
-      model: 'dall-e-3',
-      prompt: `Simple, clean, minimalist icon: ${prompt}. Icon style, no text, plain background.`,
-      n: 1,
-      size: '1024x1024',
-      quality: 'standard',
-      response_format: 'b64_json', // Get base64 directly instead of URL
-    });
+    // Call Gemini 2.5 Flash Image Preview API
+    const response = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        contents: [
+          {
+            parts: [
+              {
+                text: `Simple, clean, minimalist icon: ${prompt}. Icon style, no text, plain background.`,
+              }
+            ]
+          }
+        ],
+        generationConfig: {
+          temperature: 1,
+          topP: 0.95,
+          topK: 40,
+          maxOutputTokens: 8192,
+        }
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
 
-    const imageB64 = response.data?.[0]?.b64_json;
+    // Extract base64 image from response
+    // Gemini returns the image in candidates[0].content.parts[0].inlineData.data
+    const imageB64 = response.data?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
     if (!imageB64) {
-      throw new Error('No image data returned from DALL-E');
+      throw new Error('No image data returned from Gemini');
     }
 
     console.log('[Image Gen] Image generated successfully, decoding base64...');
@@ -87,7 +95,14 @@ export async function generateImageFromPrompt(
       imageUrl: publicImageUrl,
     };
   } catch (error) {
-    console.error('Error generating image from DALL-E:', error);
+    console.error('Error generating image from Imagen:', error);
+
+    // If Imagen fails, provide helpful error message
+    if (axios.isAxiosError(error)) {
+      console.error('Imagen API error:', error.response?.data);
+      throw new Error(`Imagen API error: ${error.response?.data?.error?.message || error.message}`);
+    }
+
     throw error;
   }
 }

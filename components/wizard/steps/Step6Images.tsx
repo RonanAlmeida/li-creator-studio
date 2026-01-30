@@ -65,21 +65,12 @@ export default function Step6Images({
 
   if (showGenerator && estimatedLines.length > 0) {
     return (
-      <div className="space-y-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Generate Images</h2>
-          <p className="text-gray-600">
-            Customize prompts and timing for each image overlay
-          </p>
-        </div>
-
-        <ImageGenerator
-          transcriptLines={estimatedLines}
-          jobId={jobId}
-          onImagesGenerated={handleImagesGenerated}
-          onSkip={onSkip}
-        />
-      </div>
+      <ImageGenerator
+        transcriptLines={estimatedLines}
+        jobId={jobId}
+        onImagesGenerated={handleImagesGenerated}
+        onSkip={onSkip}
+      />
     );
   }
 

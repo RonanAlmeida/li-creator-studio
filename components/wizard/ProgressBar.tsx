@@ -35,7 +35,7 @@ export default function ProgressBar({
   };
 
   return (
-    <div className="bg-white border-b border-gray-200 py-6 px-4">
+    <div className="bg-white border-b border-gray-200 py-3 px-4">
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between relative">
           {/* Progress line */}
@@ -70,7 +70,7 @@ export default function ProgressBar({
                       status === 'completed'
                         ? 'bg-gradient-to-r from-[#0A66C2] to-[#004182] text-white'
                         : status === 'active'
-                        ? 'bg-[#0A66C2] text-white animate-pulse'
+                        ? 'bg-[#0A66C2] text-white'
                         : 'bg-gray-200 text-gray-500'
                     }
                     ${clickable ? 'cursor-pointer hover:scale-110' : 'cursor-not-allowed'}
