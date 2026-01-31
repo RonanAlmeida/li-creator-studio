@@ -39,11 +39,7 @@ export async function generateImageFromPrompt(
       contents: `${prompt}. Cute cartoon illustration style, simple flat design, not too detailed, friendly and approachable, small icon-like size.`,
       config: {
         responseModalities: ['TEXT', 'IMAGE'], // Required to get image output
-        imageConfig: {
-          aspectRatio: '1:1', // Square images work best for overlays
-          imageSize: '1K',    // Smaller size for cartoon style
-        },
-      },
+      } as any, // Type assertion to bypass SDK type limitations
     });
 
     // Extract base64 image from response
