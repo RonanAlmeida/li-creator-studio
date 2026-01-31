@@ -251,7 +251,7 @@ Continue for all 5 ideas. Be creative and make each idea actionable.`;
       setLastGeneratedScript(data.script); // Save for future /edit commands
     } catch (error) {
       const errorMessage = {
-        text: `Error: ${error instanceof Error ? error.message : 'Failed to generate script'}. Please check your API key in the .env file.`,
+        text: `Error: ${error instanceof Error ? error.message : 'Failed to generate script'}. Please click the Settings icon (⚙️) in the top right corner to configure your API keys.`,
         timestamp: new Date(),
         isAI: true
       };
@@ -294,7 +294,7 @@ Continue for all 5 ideas. Be creative and make each idea actionable.`;
       setInput('');
     } catch (error) {
       const errorMessage = {
-        text: `Error: ${error instanceof Error ? error.message : 'Failed to generate script'}. Please check your OPEN_AI_API_KEY in the .env file.`,
+        text: `Error: ${error instanceof Error ? error.message : 'Failed to generate script'}. Please click the Settings icon (⚙️) in the top right corner to configure your API keys.`,
         timestamp: new Date(),
         isAI: true
       };

@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'API Keys Not Configured\n\nPlease add the following API keys to your .env file:\n\n- OPEN_AI_API_KEY (AI script generation & transcription)\n- ELEVENLABS_API_KEY (AI voice narration)\n- GEMINI_API_KEY (Image generation with Gemini)\n- FAL_KEY (Video generation with Fal.ai)\n\nGet your keys:\n- OpenAI: https://platform.openai.com/api-keys\n- ElevenLabs: https://elevenlabs.io/app/settings/api-keys\n- Gemini: https://makersuite.google.com/app/apikey\n- Fal.ai: https://fal.ai/dashboard/keys'
+          error: 'API Keys Not Configured\n\nPlease click the Settings icon (⚙️) in the top right corner to configure your API keys.\n\nRequired API keys:\n- OpenAI API Key (AI script generation & transcription)\n- ElevenLabs API Key (AI voice narration)\n- Gemini API Key (Image generation)\n- Fal.ai API Key (Video generation)\n\nAlternatively, you can add these keys to your .env file for development.'
         },
         { status: 500 }
       );
