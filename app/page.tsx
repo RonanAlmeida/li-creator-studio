@@ -21,12 +21,16 @@ import VideoPreview from '@/components/studio/VideoPreview';
 import CampaignWizard from '@/components/studio/CampaignWizard';
 import { ToastContainer } from '@/components/ui/Toast';
 import VideoCreationWizard from '@/components/wizard/VideoCreationWizard';
+import AdCreationWizard from '@/components/wizard/AdCreationWizard';
 import { Video, Image, Type, Play, Sparkles, TrendingUp, BarChart3, Clock, FileText, ImagePlus, Clapperboard, Settings, ChevronDown } from 'lucide-react';
 import type { ImageOverlay, TranscriptLine } from '@/lib/types/image-overlay';
 
 type GenerationType = 'text-to-video' | 'image-to-video' | 'video-to-video';
 
+type CreationMode = 'studio' | 'ads';
+
 export default function Home() {
+  const [creationMode, setCreationMode] = useState<CreationMode>('studio');
   const [activeTab, setActiveTab] = useState<GenerationType>('text-to-video');
   const [text, setText] = useState('');
   const [captionOptions, setCaptionOptions] = useState<CaptionOptions>(CAPTION_DEFAULTS);
@@ -336,10 +340,40 @@ export default function Home() {
 
           {/* Center Feed - Main Content */}
           <div className="col-span-5 space-y-4">
+            {/* Mode Toggle */}
+            <div className="bg-white rounded-xl shadow-linkedin p-3">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCreationMode('studio')}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all ${
+                    creationMode === 'studio'
+                      ? 'bg-gradient-to-r from-linkedin-blue to-linkedin-blue-dark text-white shadow-md'
+                      : 'bg-linkedin-gray-100 text-linkedin-gray-700 hover:bg-linkedin-gray-200'
+                  }`}
+                >
+                  <Video className="w-4 h-4" />
+                  <span>Creator Mode</span>
+                </button>
+                <button
+                  onClick={() => setCreationMode('ads')}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all ${
+                    creationMode === 'ads'
+                      ? 'bg-gradient-to-r from-linkedin-blue to-linkedin-blue-dark text-white shadow-md'
+                      : 'bg-linkedin-gray-100 text-linkedin-gray-700 hover:bg-linkedin-gray-200'
+                  }`}
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>Ad Mode</span>
+                </button>
+              </div>
+            </div>
+
             {/* Post Creation Card */}
             <div id="video-content-area" className="bg-white rounded-xl shadow-linkedin p-5">
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900">Create Video Content</h2>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  {creationMode === 'studio' ? 'Create Video Content' : 'Create Campaign Ad'}
+                </h2>
                 <button
                   onClick={() => setShowSettings(true)}
                   className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-linkedin-gray-700 hover:text-linkedin-blue hover:bg-linkedin-gray-100 rounded-lg transition-colors"
@@ -348,42 +382,53 @@ export default function Home() {
                 </button>
               </div>
 
-              {/* Generation Type Tabs */}
-              <div className="flex gap-6 mb-5 border-b border-linkedin-gray-200">
-                <TabButton
-                  active={activeTab === 'text-to-video'}
-                  onClick={() => setActiveTab('text-to-video')}
-                  icon={<FileText className="w-4 h-4" />}
-                  label="Text to Video"
-                />
-                <TabButton
-                  active={activeTab === 'image-to-video'}
-                  onClick={() => setActiveTab('image-to-video')}
-                  icon={<ImagePlus className="w-4 h-4" />}
-                  label="Image to Video"
-                />
-                <TabButton
-                  active={activeTab === 'video-to-video'}
-                  onClick={() => setActiveTab('video-to-video')}
-                  icon={<Clapperboard className="w-4 h-4" />}
-                  label="Video to Video"
-                />
-              </div>
+              {/* Creator Mode: Generation Type Tabs */}
+              {creationMode === 'studio' && (
+                <div className="flex gap-6 mb-5 border-b border-linkedin-gray-200">
+                  <TabButton
+                    active={activeTab === 'text-to-video'}
+                    onClick={() => setActiveTab('text-to-video')}
+                    icon={<FileText className="w-4 h-4" />}
+                    label="Text to Video"
+                  />
+                  <TabButton
+                    active={activeTab === 'image-to-video'}
+                    onClick={() => setActiveTab('image-to-video')}
+                    icon={<ImagePlus className="w-4 h-4" />}
+                    label="Image to Video"
+                  />
+                  <TabButton
+                    active={activeTab === 'video-to-video'}
+                    onClick={() => setActiveTab('video-to-video')}
+                    icon={<Clapperboard className="w-4 h-4" />}
+                    label="Video to Video"
+                  />
+                </div>
+              )}
 
-              {/* Content Area - Multi-Step Wizard */}
-              <VideoCreationWizard
-                generationType={activeTab}
-                initialScript={text}
-                initialCaption={captionText}
-                initialHashtags={hashtags}
-                initialImageUrl={lastImportedPostImage}
-                onComplete={(video) => {
-                  setGeneratedVideo(video);
-                  addToast('success', 'Video generated successfully!');
-                  // Clear the imported image URL after video is generated
-                  setLastImportedPostImage(null);
-                }}
-              />
+              {/* Content Area - Conditional Wizard */}
+              {creationMode === 'studio' ? (
+                <VideoCreationWizard
+                  generationType={activeTab}
+                  initialScript={text}
+                  initialCaption={captionText}
+                  initialHashtags={hashtags}
+                  initialImageUrl={lastImportedPostImage}
+                  onComplete={(video) => {
+                    setGeneratedVideo(video);
+                    addToast('success', 'Video generated successfully!');
+                    // Clear the imported image URL after video is generated
+                    setLastImportedPostImage(null);
+                  }}
+                />
+              ) : (
+                <AdCreationWizard
+                  onComplete={(video) => {
+                    setGeneratedVideo(video);
+                    addToast('success', 'Ad campaign video generated successfully!');
+                  }}
+                />
+              )}
             </div>
 
             {/* Generated Video Preview */}
